@@ -1,106 +1,120 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Daftar Order GoMotorcycle</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order GoMotorcycle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     body {
-      background-color: #1e1e1e;
-      color: white;
-      font-family: sans-serif;
+      font-family: 'Inter', sans-serif;
+      background-color: #121212;
+      color: #fff;
       padding: 20px;
     }
-    .order {
-      background-color: #2c2c2c;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 10px;
+    h2 {
+      margin-bottom: 20px;
+      font-weight: 600;
     }
-    pre#debug {
-      white-space: pre-wrap;
-      background: #000;
-      color: #0f0;
-      padding: 10px;
-      font-size: 12px;
-      margin-top: 20px;
+    .order {
+      background-color: #1e1e1e;
+      border-left: 5px solid #00c853;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      transition: transform 0.2s ease;
+    }
+    .order:hover {
+      transform: scale(1.01);
+    }
+    .order strong {
+      color: #00e676;
+      font-size: 16px;
+    }
+    .label {
+      font-weight: 600;
+      color: #90caf9;
+    }
+    .value {
+      color: #f1f1f1;
+    }
+    .info-line {
+      margin: 4px 0;
     }
   </style>
 </head>
 <body>
   <h2>📋 Daftar Order GoMotorcycle</h2>
   <div id="orderList">Memuat data...</div>
-  <pre id="debug">Debug aktif...</pre>
 
-  <!-- Firebase CDN -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-    function getQueryParam(key) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(key);
-    }
-
-    const apiKey = getQueryParam("apiKey");
-    const databaseURL = getQueryParam("databaseURL");
-    const projectId = getQueryParam("projectId");
-    const debugEl = document.getElementById("debug");
-
-    debugEl.textContent = `Param URL:\napiKey=${apiKey}\ndatabaseURL=${databaseURL}\nprojectId=${projectId}\n`;
+    // Ambil parameter dari URL
+    const params = new URLSearchParams(window.location.search);
+    const apiKey = params.get("apiKey");
+    const databaseURL = params.get("databaseURL");
+    const projectId = params.get("projectId");
 
     if (!apiKey || !databaseURL || !projectId) {
-      debugEl.textContent += "\n❌ Param URL tidak lengkap!";
-      throw new Error("Missing Firebase configuration in URL.");
+      document.getElementById("orderList").innerHTML = "❌ Param URL tidak lengkap!";
+      throw new Error("Parameter URL tidak lengkap.");
     }
 
-    firebase.initializeApp({
+    const firebaseConfig = {
       apiKey,
-      authDomain: projectId + ".firebaseapp.com",
       databaseURL,
       projectId
-    });
+    };
 
-    debugEl.textContent += "\n✅ Firebase diinisialisasi...\nMengambil data...\n";
+    firebase.initializeApp(firebaseConfig);
 
     const db = firebase.database().ref("GoMotorcycle");
     const orderList = document.getElementById("orderList");
 
-    db.once("value").then(snapshot => {
-      const data = snapshot.val();
-      debugEl.textContent += "\n📦 Data snapshot:\n" + JSON.stringify(data, null, 2);
-
+    db.on("value", snapshot => {
       orderList.innerHTML = "";
+      const data = snapshot.val();
       if (!data) {
-        orderList.innerHTML = "<p>Belum ada order atau node kosong.</p>";
+        orderList.innerHTML = "📭 Belum ada order masuk.";
         return;
       }
 
-      Object.entries(data).forEach(([uid, rawOrder]) => {
-        let order;
+      Object.keys(data).forEach(uid => {
+        let item = data[uid];
         try {
-          order = typeof rawOrder === "string" ? JSON.parse(rawOrder) : rawOrder;
+          if (typeof item === "string") {
+            item = JSON.parse(item);
+          }
         } catch (e) {
-          debugEl.textContent += `\n❌ Gagal parsing JSON untuk UID ${uid}: ${e}`;
+          console.warn("Data tidak valid untuk UID:", uid);
           return;
         }
 
         const div = document.createElement("div");
         div.className = "order";
         div.innerHTML = `
-          <strong>🧍‍♂️ Order dari ${order.name || '-'}</strong><br>
-          Nomor HP: ${order.PhoneNumber || '-'}<br>
-          Dari: ${order.alamat_a || '-'}<br>
-          Tujuan: ${order.alamat_b || '-'}<br>
-          Jarak: ${order.jarak || '-'} | Durasi: ${order.durasi || '-'}<br>
-          Harga: ${order.harga || '-'}<br>
-          Status: ${order.status || '-'}<br>
-          Waktu Order: ${order.waktu_order || '-'}<br>
-          Kendaraan: ${order.vehicle || '-'}
+          <div class="info-line"><strong>🧍‍♂️ ${item.name || "Nama tidak tersedia"}</strong></div>
+          <div class="info-line"><span class="label">📱 Nomor HP:</span> <span class="value">${item.PhoneNumber || "-"}</span></div>
+          <div class="info-line"><span class="label">📍 Dari:</span> <span class="value">${item.alamat_a || "-"}</span></div>
+          <div class="info-line"><span class="label">🎯 Tujuan:</span> <span class="value">${item.alamat_b || "-"}</span></div>
+          <div class="info-line"><span class="label">📏 Jarak:</span> <span class="value">${item.jarak || "-"}</span></div>
+          <div class="info-line"><span class="label">⏱️ Durasi:</span> <span class="value">${item.durasi || "-"}</span></div>
+          <div class="info-line"><span class="label">💰 Harga:</span> <span class="value">${item.harga || "-"}</span></div>
+          <div class="info-line"><span class="label">🚦 Status:</span> <span class="value">${item.status || "-"}</span></div>
+          <div class="info-line"><span class="label">🕒 Waktu:</span> <span class="value">${item.waktu_order || "-"}</span></div>
+          <div class="info-line"><span class="label">🛵 Kendaraan:</span> <span class="value">${item.vehicle || "-"}</span></div>
         `;
         orderList.appendChild(div);
       });
-    }).catch(err => {
-      debugEl.textContent += "\n❗ Gagal mengambil data:\n" + err;
     });
   </script>
 </body>
