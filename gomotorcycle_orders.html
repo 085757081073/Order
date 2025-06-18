@@ -19,9 +19,8 @@
 
     #orderList {
       display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      justify-content: center;
+      flex-direction: column;
+      gap: 15px;
       margin-top: 20px;
     }
 
@@ -31,25 +30,30 @@
       border-radius: 10px;
       padding: 15px 20px;
       width: 100%;
-      max-width: 400px;
+      box-sizing: border-box;
       box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .order-content {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .order span {
+      flex: 1 1 48%;
+      min-width: 120px;
     }
 
     .order strong {
       color: #007BFF;
-      margin-bottom: 5px;
       display: block;
-    }
-
-    .order span {
-      margin-bottom: 5px;
+      margin-bottom: 10px;
+      font-size: 18px;
     }
 
     button {
-      margin-top: 15px;
+      margin-top: 10px;
       padding: 10px 15px;
       background-color: #007BFF;
       color: white;
@@ -64,15 +68,9 @@
       cursor: not-allowed;
     }
 
-    @media (min-width: 700px) {
-      .order {
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: flex-start;
-        gap: 10px;
-      }
+    @media (max-width: 500px) {
       .order span {
-        flex: 1 1 48%;
+        flex: 1 1 100%;
       }
     }
   </style>
@@ -81,7 +79,6 @@
   <h2>📋 Daftar Order GoMotorcycle</h2>
   <div id="orderList">Memuat data...</div>
 
-  <!-- Firebase CDN -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -121,15 +118,17 @@
         div.className = "order";
         div.innerHTML = `
           <strong>🧍‍♂️ ${order.name || '-'}</strong>
-          <span>📞 ${order.PhoneNumber || '-'}</span>
-          <span>🗺️ Dari: ${order.alamat_a || '-'}</span>
-          <span>🎯 Tujuan: ${order.alamat_b || '-'}</span>
-          <span>📏 Jarak: ${order.jarak || '-'} </span>
-          <span>⏱️ Durasi: ${order.durasi || '-'}</span>
-          <span>💵 Harga: ${order.harga || '-'}</span>
-          <span>🚘 Kendaraan: ${order.vehicle || '-'}</span>
-          <span>⏰ Waktu: ${order.waktu_order || '-'}</span>
-          <span>📌 Status: ${order.status || '-'}</span>
+          <div class="order-content">
+            <span>📞 ${order.PhoneNumber || '-'}</span>
+            <span>🗺️ Dari: ${order.alamat_a || '-'}</span>
+            <span>🎯 Tujuan: ${order.alamat_b || '-'}</span>
+            <span>📏 Jarak: ${order.jarak || '-'}</span>
+            <span>⏱️ Durasi: ${order.durasi || '-'}</span>
+            <span>💵 Harga: ${order.harga || '-'}</span>
+            <span>🚘 Kendaraan: ${order.vehicle || '-'}</span>
+            <span>⏰ Waktu: ${order.waktu_order || '-'}</span>
+            <span>📌 Status: ${order.status || '-'}</span>
+          </div>
           <button onclick="ambilOrder('${uid}')" ${order.status !== 'menunggu driver' ? 'disabled' : ''}>
             Ambil Order
           </button>
@@ -153,7 +152,6 @@
             waktu_ambil: new Date().toLocaleString()
           });
 
-          // Kirim data ke App Inventor
           if (window.AppInventor) {
             window.AppInventor.setWebViewString(JSON.stringify({
               ...data,
