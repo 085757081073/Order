@@ -16,18 +16,26 @@
       margin-bottom: 15px;
       border-radius: 10px;
     }
+    pre#debug {
+      white-space: pre-wrap;
+      background: #000;
+      color: #0f0;
+      padding: 10px;
+      font-size: 12px;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <h2>📋 Daftar Order GoMotorcycle</h2>
   <div id="orderList">Memuat data...</div>
+  <pre id="debug">Debug aktif...</pre>
 
   <!-- Firebase CDN -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-    // Ambil parameter dari URL
     function getQueryParam(key) {
       const params = new URLSearchParams(window.location.search);
       return params.get(key);
@@ -36,34 +44,37 @@
     const apiKey = getQueryParam("apiKey");
     const databaseURL = getQueryParam("databaseURL");
     const projectId = getQueryParam("projectId");
+    const debugEl = document.getElementById("debug");
+    debugEl.textContent = `Param URL:\napiKey=${apiKey}\ndatabaseURL=${databaseURL}\nprojectId=${projectId}\n`;
 
     if (!apiKey || !databaseURL || !projectId) {
-      document.getElementById("orderList").innerHTML = "⚠️ Parameter URL tidak lengkap.";
-      throw new Error("Missing URL parameters.");
+      debugEl.textContent += "\n❌ Param URL tidak lengkap!";
+      throw new Error("Missing Firebase configuration in URL.");
     }
 
-    // Inisialisasi Firebase
-    const firebaseConfig = {
+    firebase.initializeApp({
       apiKey,
       authDomain: projectId + ".firebaseapp.com",
       databaseURL,
       projectId
-    };
-    firebase.initializeApp(firebaseConfig);
+    });
+
+    debugEl.textContent += "\n✅ Firebase diinisialisasi...\nMengambil data...\n";
 
     const db = firebase.database().ref("GoMotorcycle");
     const orderList = document.getElementById("orderList");
 
-    db.on("value", snapshot => {
-      orderList.innerHTML = "";
+    db.once("value").then(snapshot => {
       const data = snapshot.val();
+      debugEl.textContent += "\n📦 Data snapshot:\n" + JSON.stringify(data, null, 2);
+
+      orderList.innerHTML = "";
       if (!data) {
-        orderList.innerHTML = "Belum ada order.";
+        orderList.innerHTML = "<p>Belum ada order atau node kosong.</p>";
         return;
       }
 
-      Object.keys(data).forEach(uid => {
-        const order = data[uid];
+      Object.entries(data).forEach(([uid, order]) => {
         const div = document.createElement("div");
         div.className = "order";
         div.innerHTML = `
@@ -79,6 +90,8 @@
         `;
         orderList.appendChild(div);
       });
+    }).catch(err => {
+      debugEl.textContent += "\n❗ Gagal mengambil data:\n" + err;
     });
   </script>
 </body>
