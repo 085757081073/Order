@@ -1,74 +1,46 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Order GoMotorcycle</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>Daftar Order GoMotorcycle</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: #121212;
-      color: #fff;
+      background-color: #1e1e1e;
+      color: white;
+      font-family: sans-serif;
       padding: 20px;
     }
-    h2 {
-      margin-bottom: 20px;
-      font-weight: 600;
-    }
     .order {
-      background-color: #1e1e1e;
-      border-left: 5px solid #00c853;
-      padding: 16px 20px;
-      margin-bottom: 16px;
+      background-color: #2c2c2c;
+      padding: 15px;
+      margin-bottom: 15px;
       border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-      transition: transform 0.2s ease;
     }
-    .order:hover {
-      transform: scale(1.01);
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #00aaff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
-    .order strong {
-      color: #00e676;
-      font-size: 16px;
-    }
-    .label {
-      font-weight: 600;
-      color: #90caf9;
-    }
-    .value {
-      color: #f1f1f1;
-    }
-    .info-line {
-      margin: 4px 0;
+    button:disabled {
+      background-color: #888;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
   <h2>📋 Daftar Order GoMotorcycle</h2>
-  <div id="orderList">Memuat data...</div>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <script>
+  <div id="orderList">Memuat data...</div>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>  <script>
     // Ambil parameter dari URL
     const params = new URLSearchParams(window.location.search);
     const apiKey = params.get("apiKey");
     const databaseURL = params.get("databaseURL");
     const projectId = params.get("projectId");
+    const driverUID = params.get("driver") || "driver123"; // Dummy UID kalau belum ada
 
-    if (!apiKey || !databaseURL || !projectId) {
-      document.getElementById("orderList").innerHTML = "❌ Param URL tidak lengkap!";
-      throw new Error("Parameter URL tidak lengkap.");
-    }
-
+    // Inisialisasi Firebase
     const firebaseConfig = {
       apiKey,
       databaseURL,
@@ -76,7 +48,6 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-
     const db = firebase.database().ref("GoMotorcycle");
     const orderList = document.getElementById("orderList");
 
@@ -84,38 +55,60 @@
       orderList.innerHTML = "";
       const data = snapshot.val();
       if (!data) {
-        orderList.innerHTML = "📭 Belum ada order masuk.";
+        orderList.innerHTML = "Belum ada order.";
         return;
       }
 
       Object.keys(data).forEach(uid => {
-        let item = data[uid];
-        try {
-          if (typeof item === "string") {
-            item = JSON.parse(item);
-          }
-        } catch (e) {
-          console.warn("Data tidak valid untuk UID:", uid);
-          return;
+        let order = data[uid];
+
+        // Jika data dikirim dalam bentuk string JSON, parse dulu
+        if (typeof order === "string") {
+          try {
+            order = JSON.parse(order);
+          } catch {}
         }
 
         const div = document.createElement("div");
         div.className = "order";
         div.innerHTML = `
-          <div class="info-line"><strong>🧍‍♂️ ${item.name || "Nama tidak tersedia"}</strong></div>
-          <div class="info-line"><span class="label">📱 Nomor HP:</span> <span class="value">${item.PhoneNumber || "-"}</span></div>
-          <div class="info-line"><span class="label">📍 Dari:</span> <span class="value">${item.alamat_a || "-"}</span></div>
-          <div class="info-line"><span class="label">🎯 Tujuan:</span> <span class="value">${item.alamat_b || "-"}</span></div>
-          <div class="info-line"><span class="label">📏 Jarak:</span> <span class="value">${item.jarak || "-"}</span></div>
-          <div class="info-line"><span class="label">⏱️ Durasi:</span> <span class="value">${item.durasi || "-"}</span></div>
-          <div class="info-line"><span class="label">💰 Harga:</span> <span class="value">${item.harga || "-"}</span></div>
-          <div class="info-line"><span class="label">🚦 Status:</span> <span class="value">${item.status || "-"}</span></div>
-          <div class="info-line"><span class="label">🕒 Waktu:</span> <span class="value">${item.waktu_order || "-"}</span></div>
-          <div class="info-line"><span class="label">🛵 Kendaraan:</span> <span class="value">${item.vehicle || "-"}</span></div>
+          <strong>🧍‍♂️ Order dari ${order.name || '-'} </strong><br>
+          Nomor HP: ${order.PhoneNumber || '-'}<br>
+          Dari: ${order.alamat_a || '-'}<br>
+          Tujuan: ${order.alamat_b || '-'}<br>
+          Jarak: ${order.jarak || '-'} | Durasi: ${order.durasi || '-'}<br>
+          Harga: ${order.harga || '-'}<br>
+          Status: ${order.status || '-'}<br>
+          Waktu Order: ${order.waktu_order || '-'}<br>
+          Kendaraan: ${order.vehicle || '-'}<br>
+          <button onclick="ambilOrder('${uid}')" ${order.status !== 'menunggu driver' ? 'disabled' : ''}>
+            Ambil Order
+          </button>
         `;
         orderList.appendChild(div);
       });
     });
-  </script>
-</body>
+
+    function ambilOrder(uid) {
+      const orderRef = firebase.database().ref("GoMotorcycle/" + uid);
+
+      orderRef.once("value").then(snapshot => {
+        let data = snapshot.val();
+        if (typeof data === "string") {
+          try { data = JSON.parse(data); } catch {}
+        }
+
+        if (data.status === "menunggu driver") {
+          orderRef.update({
+            status: "diambil",
+            driver_id: driverUID,
+            waktu_ambil: new Date().toLocaleString()
+          });
+          alert("✅ Order berhasil diambil!");
+        } else {
+          alert("❌ Order sudah diambil driver lain.");
+        }
+      });
+    }
+  </script></body>
 </html>
