@@ -6,50 +6,40 @@
   <style>
     body {
       background-color: #ffffff;
-      color: #333;
+      color: #222;
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
       padding: 20px;
+      margin: 0;
     }
 
     h2 {
       color: #007BFF;
-      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
     }
 
     #orderList {
       display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-top: 20px;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: stretch;
     }
 
     .order {
-      background-color: #f9f9f9;
-      border: 2px solid #007BFF;
-      border-radius: 10px;
+      background-color: #f4f4f4;
+      border-left: 5px solid #007BFF;
       padding: 15px 20px;
-      width: 100%;
-      box-sizing: border-box;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      border-radius: 10px;
+      flex: 1 1 100%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      font-size: 16px;
+      line-height: 1.6;
     }
 
-    .order-content {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .order span {
-      flex: 1 1 48%;
-      min-width: 120px;
-    }
-
-    .order strong {
-      color: #007BFF;
-      display: block;
-      margin-bottom: 10px;
-      font-size: 18px;
+    @media(min-width: 600px) {
+      .order {
+        flex: 1 1 48%;
+      }
     }
 
     button {
@@ -58,20 +48,15 @@
       background-color: #007BFF;
       color: white;
       border: none;
-      font-weight: bold;
-      border-radius: 5px;
+      border-radius: 6px;
+      font-size: 15px;
       cursor: pointer;
+      width: 100%;
     }
 
     button:disabled {
-      background-color: #cccccc;
+      background-color: #aaa;
       cursor: not-allowed;
-    }
-
-    @media (max-width: 500px) {
-      .order span {
-        flex: 1 1 100%;
-      }
     }
   </style>
 </head>
@@ -79,6 +64,7 @@
   <h2>📋 Daftar Order GoMotorcycle</h2>
   <div id="orderList">Memuat data...</div>
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -96,7 +82,6 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-
     const db = firebase.database().ref("GoMotorcycle");
     const orderList = document.getElementById("orderList");
 
@@ -104,12 +89,13 @@
       orderList.innerHTML = "";
       const data = snapshot.val();
       if (!data) {
-        orderList.innerHTML = "<p>Belum ada order.</p>";
+        orderList.innerHTML = "Belum ada order.";
         return;
       }
 
       Object.keys(data).forEach(uid => {
         let order = data[uid];
+
         if (typeof order === "string") {
           try { order = JSON.parse(order); } catch {}
         }
@@ -117,18 +103,15 @@
         const div = document.createElement("div");
         div.className = "order";
         div.innerHTML = `
-          <strong>🧍‍♂️ ${order.name || '-'}</strong>
-          <div class="order-content">
-            <span>📞 ${order.PhoneNumber || '-'}</span>
-            <span>🗺️ Dari: ${order.alamat_a || '-'}</span>
-            <span>🎯 Tujuan: ${order.alamat_b || '-'}</span>
-            <span>📏 Jarak: ${order.jarak || '-'}</span>
-            <span>⏱️ Durasi: ${order.durasi || '-'}</span>
-            <span>💵 Harga: ${order.harga || '-'}</span>
-            <span>🚘 Kendaraan: ${order.vehicle || '-'}</span>
-            <span>⏰ Waktu: ${order.waktu_order || '-'}</span>
-            <span>📌 Status: ${order.status || '-'}</span>
-          </div>
+          <strong>🧍‍♂️ ${order.name || '-'}</strong><br>
+          📞 ${order.PhoneNumber || '-'}<br>
+          🚩 Dari: ${order.alamat_a || '-'}<br>
+          🎯 Tujuan: ${order.alamat_b || '-'}<br>
+          📏 Jarak: ${order.jarak || '-'} | ⏱️ Durasi: ${order.durasi || '-'}<br>
+          💰 Harga: ${order.harga || '-'}<br>
+          📦 Status: ${order.status || '-'}<br>
+          🕒 Waktu: ${order.waktu_order || '-'}<br>
+          🛵 Kendaraan: ${order.vehicle || '-'}<br>
           <button onclick="ambilOrder('${uid}')" ${order.status !== 'menunggu driver' ? 'disabled' : ''}>
             Ambil Order
           </button>
@@ -138,33 +121,35 @@
     });
 
     function ambilOrder(uid) {
-      const ref = firebase.database().ref("GoMotorcycle/" + uid);
-      ref.once("value").then(snapshot => {
+      const orderRef = firebase.database().ref("GoMotorcycle/" + uid);
+
+      orderRef.once("value").then(snapshot => {
         let data = snapshot.val();
         if (typeof data === "string") {
           try { data = JSON.parse(data); } catch {}
         }
 
         if (data.status === "menunggu driver") {
-          ref.update({
+          orderRef.update({
             status: "diambil",
             driver_id: driverUID,
             waktu_ambil: new Date().toLocaleString()
           });
 
-          if (window.AppInventor) {
+          // Kirim ke Kodular
+          if (window.AppInventor && window.AppInventor.setWebViewString) {
             window.AppInventor.setWebViewString(JSON.stringify({
               ...data,
-              status: "diambil",
-              order_id: uid,
               driver_id: driverUID,
-              waktu_ambil: new Date().toLocaleString()
+              waktu_ambil: new Date().toLocaleString(),
+              status: "diambil",
+              uid: uid
             }));
           }
 
           alert("✅ Order berhasil diambil!");
         } else {
-          alert("❌ Order sudah diambil oleh driver lain.");
+          alert("❌ Order sudah diambil driver lain.");
         }
       });
     }
