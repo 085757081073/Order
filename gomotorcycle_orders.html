@@ -50,7 +50,6 @@
   <h2>Pesanan Menunggu Driver</h2>
   <div id="list"></div>
 </div>
-
 <script>
 const urlParams = new URLSearchParams(window.location.search);
 const firebaseURL = urlParams.get("firebase_url");
@@ -62,7 +61,6 @@ if (!firebaseURL || !firebaseKey || !bucket) {
   alert("URL firebase, key, atau bucket belum lengkap.");
 }
 
-// Load Firebase SDK
 const script = document.createElement("script");
 script.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js";
 document.head.appendChild(script);
@@ -100,6 +98,13 @@ script2.onload = () => {
         `;
 
         card.querySelector(".btn-ambil").onclick = () => {
+          // 1. Update ke Firebase
+          db.ref(`${bucket}/${key}`).update({
+            status: "diambil",
+            driverID: driverID
+          });
+
+          // 2. Kirim ke WebViewString
           const dataKirim = {
             status: "order_ambil_berhasil",
             userID: order.userID || "",
@@ -116,9 +121,8 @@ script2.onload = () => {
             to_lng: order.to_lng || "",
             harga: order.harga || "",
             latlong_pengorder: order.latlong_pengorder || "",
-            driver: driverID
+            driverID: driverID
           };
-
           if (window.WebViewInterface) {
             window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
           } else {
