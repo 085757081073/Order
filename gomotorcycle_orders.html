@@ -132,10 +132,11 @@ script2.onload = () => {
           });
 
           if (window.WebViewInterface) {
-            window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
-          } else {
-            alert("WebViewInterface tidak tersedia.");
-          }
+  window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
+}
+// else {
+//   alert("WebViewInterface tidak tersedia.");
+// }
         };
         listDiv.appendChild(card);
       }
