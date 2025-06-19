@@ -67,11 +67,6 @@
       font-size: 16px;
     }
 
-    button:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
-    }
-
     @media (max-width: 500px) {
       .order span {
         flex: 1 1 100%;
@@ -96,14 +91,10 @@
     if (!apiKey || !databaseURL || !projectId) {
       document.getElementById("orderList").innerHTML = "<p>❌ Konfigurasi Firebase tidak lengkap di URL.</p>";
     } else {
-      const firebaseConfig = {
-        apiKey,
-        databaseURL,
-        projectId
-      };
-
+      const firebaseConfig = { apiKey, databaseURL, projectId };
       firebase.initializeApp(firebaseConfig);
-      const db = firebase.database().ref("/"); // 🔄 Akses root
+
+      const db = firebase.database().ref("/");
       const orderList = document.getElementById("orderList");
 
       db.on("value", snapshot => {
@@ -114,6 +105,8 @@
           return;
         }
 
+        let tampilkanSemua = true;
+
         Object.keys(data).forEach(uid => {
           let order = data[uid];
           if (typeof order === "string") {
@@ -122,8 +115,26 @@
 
           if (typeof order !== "object" || order === null) return;
 
-          const status = String(order.status || '').trim().toLowerCase();
-          console.log("Order UID:", uid, "| Status:", status);
+          const status = String(order.status || "").trim().toLowerCase();
+
+          if (status !== "menunggu driver") {
+            tampilkanSemua = false; // Jika ada status selain menunggu driver
+          }
+        });
+
+        if (!tampilkanSemua) {
+          orderList.innerHTML = "<p>🔒 Order sedang diproses. Semua order disembunyikan sementara.</p>";
+          return;
+        }
+
+        // Tampilkan semua order
+        Object.keys(data).forEach(uid => {
+          let order = data[uid];
+          if (typeof order === "string") {
+            try { order = JSON.parse(order); } catch {}
+          }
+
+          if (typeof order !== "object" || order === null) return;
 
           const div = document.createElement("div");
           div.className = "order";
@@ -139,10 +150,9 @@
               <span>🚘 Kendaraan: ${order.vehicle || '-'}</span>
               <span>🕒 Waktu Order: ${order.waktu_order || '-'}</span>
               <span>📌 Status: ${order.status || '-'}</span>
+              <span>🆔 User ID: ${uid}</span>
             </div>
-            <button onclick="ambilOrder('${uid}')" ${status !== 'menunggu driver' ? 'disabled' : ''}>
-              Ambil Order
-            </button>
+            <button onclick="ambilOrder('${uid}')">Ambil Order</button>
           `;
           orderList.appendChild(div);
         });
@@ -156,7 +166,7 @@
             try { data = JSON.parse(data); } catch {}
           }
 
-          const status = String(data.status || '').trim().toLowerCase();
+          const status = String(data.status || "").trim().toLowerCase();
           if (status === "menunggu driver") {
             const waktuAmbil = new Date().toLocaleString();
             ref.update({
@@ -170,6 +180,7 @@
                 ...data,
                 status: "diambil",
                 order_id: uid,
+                user_id: uid,
                 driver_id: driverUID,
                 waktu_ambil: waktuAmbil
               }));
