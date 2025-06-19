@@ -103,7 +103,7 @@
       };
 
       firebase.initializeApp(firebaseConfig);
-      const db = firebase.database().ref("/"); // 🔄 Langsung dari root
+      const db = firebase.database().ref("/"); // 🔄 Akses root
       const orderList = document.getElementById("orderList");
 
       db.on("value", snapshot => {
@@ -120,7 +120,10 @@
             try { order = JSON.parse(order); } catch {}
           }
 
-          if (typeof order !== "object" || order === null) return; // skip jika rusak
+          if (typeof order !== "object" || order === null) return;
+
+          const status = String(order.status || '').trim().toLowerCase();
+          console.log("Order UID:", uid, "| Status:", status);
 
           const div = document.createElement("div");
           div.className = "order";
@@ -137,7 +140,7 @@
               <span>🕒 Waktu Order: ${order.waktu_order || '-'}</span>
               <span>📌 Status: ${order.status || '-'}</span>
             </div>
-            <button onclick="ambilOrder('${uid}')" ${order.status !== 'menunggu driver' ? 'disabled' : ''}>
+            <button onclick="ambilOrder('${uid}')" ${status !== 'menunggu driver' ? 'disabled' : ''}>
               Ambil Order
             </button>
           `;
@@ -153,7 +156,8 @@
             try { data = JSON.parse(data); } catch {}
           }
 
-          if (data.status === "menunggu driver") {
+          const status = String(data.status || '').trim().toLowerCase();
+          if (status === "menunggu driver") {
             const waktuAmbil = new Date().toLocaleString();
             ref.update({
               status: "diambil",
