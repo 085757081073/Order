@@ -76,7 +76,7 @@
   </style>
 </head>
 <body>
-  <h2>📋 Daftar Order GoMotorcycle (Menunggu Driver)</h2>
+  <h2>📋 Daftar Order GoMotorcycle</h2>
   <div id="orderList">Memuat data...</div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -89,37 +89,33 @@
     const projectId = params.get("projectId");
     const driverUID = params.get("driver") || "driver123";
 
-    const firebaseConfig = {
-      apiKey,
-      databaseURL,
-      projectId
-    };
+    if (!apiKey || !databaseURL || !projectId) {
+      document.getElementById("orderList").innerHTML = "<p>❌ Konfigurasi Firebase tidak lengkap di URL.</p>";
+    } else {
+      const firebaseConfig = {
+        apiKey,
+        databaseURL,
+        projectId
+      };
 
-    firebase.initializeApp(firebaseConfig);
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database().ref("GoMotorcycle");
+      const orderList = document.getElementById("orderList");
 
-    const db = firebase.database().ref("GoMotorcycle");
-    const orderList = document.getElementById("orderList");
-
-    db.on("value", snapshot => {
-      orderList.innerHTML = "";
-      const data = snapshot.val();
-      if (!data) {
-        orderList.innerHTML = "<p>Belum ada order yang menunggu driver.</p>";
-        return;
-      }
-
-      let hasWaitingOrders = false;
-
-      Object.keys(data).forEach(uid => {
-        let order = data[uid];
-        if (typeof order === "string") {
-          try { order = JSON.parse(order); } catch {}
+      db.on("value", snapshot => {
+        orderList.innerHTML = "";
+        const data = snapshot.val();
+        if (!data) {
+          orderList.innerHTML = "<p>Belum ada order.</p>";
+          return;
         }
 
-        // Hanya tampilkan order dengan status 'menunggu driver'
-        if (order.status === "menunggu driver") {
-          hasWaitingOrders = true;
-          
+        Object.keys(data).forEach(uid => {
+          let order = data[uid];
+          if (typeof order === "string") {
+            try { order = JSON.parse(order); } catch {}
+          }
+
           const div = document.createElement("div");
           div.className = "order";
           div.innerHTML = `
@@ -135,49 +131,46 @@
               <span>⏰ Waktu: ${order.waktu_order || '-'}</span>
               <span>📌 Status: ${order.status || '-'}</span>
             </div>
-            <button onclick="ambilOrder('${uid}')">
+            <button onclick="ambilOrder('${uid}')" ${order.status !== 'menunggu driver' ? 'disabled' : ''}>
               Ambil Order
             </button>
           `;
           orderList.appendChild(div);
-        }
+        });
       });
 
-      if (!hasWaitingOrders) {
-        orderList.innerHTML = "<p>Tidak ada order yang menunggu driver saat ini.</p>";
-      }
-    });
-
-    function ambilOrder(uid) {
-      const ref = firebase.database().ref("GoMotorcycle/" + uid);
-      ref.once("value").then(snapshot => {
-        let data = snapshot.val();
-        if (typeof data === "string") {
-          try { data = JSON.parse(data); } catch {}
-        }
-
-        if (data.status === "menunggu driver") {
-          ref.update({
-            status: "diambil",
-            driver_id: driverUID,
-            waktu_ambil: new Date().toLocaleString()
-          });
-
-          if (window.AppInventor) {
-            window.AppInventor.setWebViewString(JSON.stringify({
-              ...data,
-              status: "diambil",
-              order_id: uid,
-              driver_id: driverUID,
-              waktu_ambil: new Date().toLocaleString()
-            }));
+      function ambilOrder(uid) {
+        const ref = firebase.database().ref("GoMotorcycle/" + uid);
+        ref.once("value").then(snapshot => {
+          let data = snapshot.val();
+          if (typeof data === "string") {
+            try { data = JSON.parse(data); } catch {}
           }
 
-          alert("✅ Order berhasil diambil!");
-        } else {
-          alert("❌ Order sudah diambil oleh driver lain.");
-        }
-      });
+          if (data.status === "menunggu driver") {
+            const waktuAmbil = new Date().toLocaleString();
+            ref.update({
+              status: "diambil",
+              driver_id: driverUID,
+              waktu_ambil: waktuAmbil
+            });
+
+            if (window.AppInventor) {
+              window.AppInventor.setWebViewString(JSON.stringify({
+                ...data,
+                status: "diambil",
+                order_id: uid,
+                driver_id: driverUID,
+                waktu_ambil: waktuAmbil
+              }));
+            }
+
+            alert("✅ Order berhasil diambil!");
+          } else {
+            alert("❌ Order sudah diambil oleh driver lain.");
+          }
+        });
+      }
     }
   </script>
 </body>
