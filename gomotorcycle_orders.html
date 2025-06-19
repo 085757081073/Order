@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
   <meta charset="UTF-8">
   <title>Daftar Pesanan - Menunggu Driver</title>
@@ -49,7 +48,8 @@
 <div class="container">
   <h2>Pesanan Menunggu Driver</h2>
   <div id="list"></div>
-</div>
+</div><audio id="notifSound" src="https://drive.google.com/uc?export=download&id=1VOuyOny46EUVJfj1smzD57PTqoiPLmbb" preload="auto"></audio>
+
 <script>
 const urlParams = new URLSearchParams(window.location.search);
 const firebaseURL = urlParams.get("firebase_url");
@@ -77,11 +77,18 @@ script2.onload = () => {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
+  let lastSnapshot = "";
+
   db.ref(bucket).on("value", snapshot => {
     const data = snapshot.val();
+    const newSnapshot = JSON.stringify(data);
+    if (newSnapshot !== lastSnapshot) {
+      lastSnapshot = newSnapshot;
+      document.getElementById("notifSound").play().catch(() => {});
+    }
+
     const listDiv = document.getElementById("list");
     listDiv.innerHTML = "";
-
     for (let key in data) {
       const order = data[key];
       if (order.status === "menunggudriver") {
@@ -96,15 +103,7 @@ script2.onload = () => {
           <label>Kendaraan:</label> ${order.vehicle || "-"}<br>
           <button class="btn-ambil">Ambil Order</button>
         `;
-
         card.querySelector(".btn-ambil").onclick = () => {
-          // 1. Update ke Firebase
-          db.ref(`${bucket}/${key}`).update({
-            status: "diambil",
-            driverID: driverID
-          });
-
-          // 2. Kirim ke WebViewString
           const dataKirim = {
             status: "order_ambil_berhasil",
             userID: order.userID || "",
@@ -121,20 +120,24 @@ script2.onload = () => {
             to_lng: order.to_lng || "",
             harga: order.harga || "",
             latlong_pengorder: order.latlong_pengorder || "",
-            driverID: driverID
+            driver: driverID
           };
+
+          db.ref(bucket + "/" + key).update({
+            status: "diambil",
+            driverID: driverID
+          });
+
           if (window.WebViewInterface) {
             window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
           } else {
             alert("WebViewInterface tidak tersedia.");
           }
         };
-
         listDiv.appendChild(card);
       }
     }
   });
 };
-</script>
-</body>
+</script></body>
 </html>
