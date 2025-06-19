@@ -1,4 +1,5 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Daftar Pesanan - Menunggu Driver</title>
@@ -49,20 +50,87 @@
   <h2>Pesanan Menunggu Driver</h2>
   <div id="list"></div>
 </div>
+
 <script>
 const urlParams = new URLSearchParams(window.location.search);
 const firebaseURL = urlParams.get("firebase_url");
 const firebaseKey = urlParams.get("firebase_key");
 const bucket = urlParams.get("firebase_bucket");
-const driverID = urlParams.get("driver") || "";if (!firebaseURL || !firebaseKey || !bucket) { alert("URL firebase, key, atau bucket belum lengkap."); }
+const driverID = urlParams.get("driver") || "";
 
-const script = document.createElement("script"); script.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"; document.head.appendChild(script);
+if (!firebaseURL || !firebaseKey || !bucket) {
+  alert("URL firebase, key, atau bucket belum lengkap.");
+}
 
-const script2 = document.createElement("script"); script2.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"; document.head.appendChild(script2);
+// Load Firebase SDK
+const script = document.createElement("script");
+script.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js";
+document.head.appendChild(script);
 
-script2.onload = () => { const firebaseConfig = { apiKey: firebaseKey, databaseURL: firebaseURL }; firebase.initializeApp(firebaseConfig); const db = firebase.database();
+const script2 = document.createElement("script");
+script2.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js";
+document.head.appendChild(script2);
 
-db.ref(bucket).on("value", snapshot => { const data = snapshot.val(); const listDiv = document.getElementById("list"); listDiv.innerHTML = ""; for (let key in data) { const order = data[key]; if (order.status === "menunggudriver") { const card = document.createElement("div"); card.className = "card"; card.innerHTML = <label>Nama:</label> ${order.name || "-"}<br> <label>Alamat A:</label> ${order.alamat_a || "-"}<br> <label>Alamat B:</label> ${order.alamat_b || "-"}<br> <label>Jarak:</label> ${order.jarak || "-"}<br> <label>Durasi:</label> ${order.durasi || "-"}<br> <label>Kendaraan:</label> ${order.vehicle || "-"}<br> <button class="btn-ambil">Ambil Order</button>; card.querySelector(".btn-ambil").onclick = () => { const dataKirim = { status: "order_ambil_berhasil", userID: order.userID || "", name: order.name || "", alamat_a: order.alamat_a || "", alamat_b: order.alamat_b || "", harga_total: order.harga_total || "", jarak: order.jarak || "", durasi: order.durasi || "", vehicle: order.vehicle || "", from_lat: order.from_lat || "", from_lng: order.from_lng || "", to_lat: order.to_lat || "", to_lng: order.to_lng || "", harga: order.harga || "", latlong_pengorder: order.latlong_pengorder || "" }; if (window.WebViewInterface) { window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim)); } else { alert("WebViewInterface tidak tersedia."); } }; listDiv.appendChild(card); } } }); }; </script>
+script2.onload = () => {
+  const firebaseConfig = {
+    apiKey: firebaseKey,
+    databaseURL: firebaseURL
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
+  db.ref(bucket).on("value", snapshot => {
+    const data = snapshot.val();
+    const listDiv = document.getElementById("list");
+    listDiv.innerHTML = "";
+
+    for (let key in data) {
+      const order = data[key];
+      if (order.status === "menunggudriver") {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <label>Nama:</label> ${order.name || "-"}<br>
+          <label>Alamat A:</label> ${order.alamat_a || "-"}<br>
+          <label>Alamat B:</label> ${order.alamat_b || "-"}<br>
+          <label>Jarak:</label> ${order.jarak || "-"}<br>
+          <label>Durasi:</label> ${order.durasi || "-"}<br>
+          <label>Kendaraan:</label> ${order.vehicle || "-"}<br>
+          <button class="btn-ambil">Ambil Order</button>
+        `;
+
+        card.querySelector(".btn-ambil").onclick = () => {
+          const dataKirim = {
+            status: "order_ambil_berhasil",
+            userID: order.userID || "",
+            name: order.name || "",
+            alamat_a: order.alamat_a || "",
+            alamat_b: order.alamat_b || "",
+            harga_total: order.harga_total || "",
+            jarak: order.jarak || "",
+            durasi: order.durasi || "",
+            vehicle: order.vehicle || "",
+            from_lat: order.from_lat || "",
+            from_lng: order.from_lng || "",
+            to_lat: order.to_lat || "",
+            to_lng: order.to_lng || "",
+            harga: order.harga || "",
+            latlong_pengorder: order.latlong_pengorder || "",
+            driver: driverID
+          };
+
+          if (window.WebViewInterface) {
+            window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
+          } else {
+            alert("WebViewInterface tidak tersedia.");
+          }
+        };
+
+        listDiv.appendChild(card);
+      }
+    }
+  });
+};
+</script>
 </body>
 </html>
