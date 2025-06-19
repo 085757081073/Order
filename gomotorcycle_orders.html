@@ -1,198 +1,118 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
   <meta charset="UTF-8">
-  <title>Daftar Order GoMotorcycle</title>
+  <title>Daftar Pesanan - Menunggu Driver</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      background-color: #ffffff;
-      color: #333;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
       margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+    .container {
       padding: 20px;
     }
-
     h2 {
-      color: #007BFF;
       text-align: center;
-      font-size: 24px;
+      color: #333;
     }
-
-    #orderList {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-top: 20px;
-    }
-
-    .order {
-      background-color: #f9f9f9;
-      border: 2px solid #007BFF;
+    .card {
+      background: #fff;
       border-radius: 10px;
-      padding: 15px 20px;
-      width: 100%;
-      box-sizing: border-box;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-      font-size: 16px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      font-size: 18px;
     }
-
-    .order-content {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      font-size: 16px;
-    }
-
-    .order span {
-      flex: 1 1 48%;
-      min-width: 120px;
-    }
-
-    .order strong {
-      color: #007BFF;
-      display: block;
-      margin-bottom: 10px;
-      font-size: 20px;
-    }
-
-    button {
-      margin-top: 10px;
-      padding: 12px 16px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
+    .label {
       font-weight: bold;
+      color: #555;
+    }
+    .btn-ambil {
+      margin-top: 10px;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
       border-radius: 5px;
       cursor: pointer;
       font-size: 16px;
     }
-
-    @media (max-width: 500px) {
-      .order span {
-        flex: 1 1 100%;
-      }
+    .btn-ambil:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-  <h2>📋 Daftar Order GoMotorcycle</h2>
-  <div id="orderList">Memuat data...</div>
+<div class="container">
+  <h2>Pesanan Menunggu Driver</h2>
+  <div id="list"></div>
+</div><script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const firebaseURL = urlParams.get("firebase_url");
+  const firebaseKey = urlParams.get("firebase_key");
+  const bucket = urlParams.get("firebase_bucket");
+  const driverID = urlParams.get("driver") || "";
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  if (!firebaseURL || !firebaseKey || !bucket) {
+    alert("URL firebase, key, atau bucket belum lengkap.");
+  }
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const apiKey = params.get("apiKey");
-    const databaseURL = params.get("databaseURL");
-    const projectId = params.get("projectId");
-    const driverUID = params.get("driver") || "driver123";
+  const script = document.createElement("script");
+  script.src = `https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js`;
+  document.head.appendChild(script);
 
-    if (!apiKey || !databaseURL || !projectId) {
-      document.getElementById("orderList").innerHTML = "<p>❌ Konfigurasi Firebase tidak lengkap di URL.</p>";
-    } else {
-      const firebaseConfig = { apiKey, databaseURL, projectId };
-      firebase.initializeApp(firebaseConfig);
+  const script2 = document.createElement("script");
+  script2.src = `https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js`;
+  document.head.appendChild(script2);
 
-      const db = firebase.database().ref("/");
-      const orderList = document.getElementById("orderList");
+  script2.onload = () => {
+    const firebaseConfig = {
+      apiKey: firebaseKey,
+      databaseURL: firebaseURL,
+    };
+    firebase.initializeApp(firebaseConfig);
 
-      db.on("value", snapshot => {
-        orderList.innerHTML = "";
-        const data = snapshot.val();
-        if (!data) {
-          orderList.innerHTML = "<p>Belum ada order.</p>";
-          return;
-        }
+    const dbRef = firebase.database().ref(bucket);
+    dbRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      const listDiv = document.getElementById("list");
+      listDiv.innerHTML = "";
 
-        let tampilkanSemua = true;
-
-        Object.keys(data).forEach(uid => {
-          let order = data[uid];
-          if (typeof order === "string") {
-            try { order = JSON.parse(order); } catch {}
-          }
-
-          if (typeof order !== "object" || order === null) return;
-
-          const status = String(order.status || "").trim().toLowerCase();
-
-          if (status !== "menunggu driver") {
-            tampilkanSemua = false; // Jika ada status selain menunggu driver
-          }
-        });
-
-        if (!tampilkanSemua) {
-          orderList.innerHTML = "<p>🔒 Order sedang diproses. Semua order disembunyikan sementara.</p>";
-          return;
-        }
-
-        // Tampilkan semua order
-        Object.keys(data).forEach(uid => {
-          let order = data[uid];
-          if (typeof order === "string") {
-            try { order = JSON.parse(order); } catch {}
-          }
-
-          if (typeof order !== "object" || order === null) return;
-
+      for (let key in data) {
+        if (data[key].status === "menunggudriver") {
+          const item = data[key];
           const div = document.createElement("div");
-          div.className = "order";
+          div.className = "card";
           div.innerHTML = `
-            <strong>🧍‍♂️ ${order.name || 'Pengguna'}</strong>
-            <div class="order-content">
-              <span>📞 Telepon: ${order.PhoneNumber || '-'}</span>
-              <span>🗺️ Dari: ${order.alamat_a || '-'}</span>
-              <span>🎯 Tujuan: ${order.alamat_b || '-'}</span>
-              <span>📏 Jarak: ${order.jarak || '-'}</span>
-              <span>⏱️ Durasi: ${order.durasi || '-'}</span>
-              <span>💵 Harga: ${order.harga || '-'}</span>
-              <span>🚘 Kendaraan: ${order.vehicle || '-'}</span>
-              <span>🕒 Waktu Order: ${order.waktu_order || '-'}</span>
-              <span>📌 Status: ${order.status || '-'}</span>
-              <span>🆔 User ID: ${uid}</span>
-            </div>
-            <button onclick="ambilOrder('${uid}')">Ambil Order</button>
+            <div><span class="label">Nama:</span> ${item.name}</div>
+            <div><span class="label">Alamat Jemput:</span> ${item.alamat_a}</div>
+            <div><span class="label">Alamat Tujuan:</span> ${item.alamat_b}</div>
+            <div><span class="label">Harga:</span> ${item.harga_total}</div>
+            <div><span class="label">Jarak:</span> ${item.jarak}</div>
+            <div><span class="label">Durasi:</span> ${item.durasi}</div>
+            <div><span class="label">Status:</span> ${item.status}</div>
+            <button class="btn-ambil" onclick="ambilPesanan('${key}')">Ambil Order</button>
           `;
-          orderList.appendChild(div);
-        });
-      });
-
-      function ambilOrder(uid) {
-        const ref = firebase.database().ref(uid);
-        ref.once("value").then(snapshot => {
-          let data = snapshot.val();
-          if (typeof data === "string") {
-            try { data = JSON.parse(data); } catch {}
-          }
-
-          const status = String(data.status || "").trim().toLowerCase();
-          if (status === "menunggu driver") {
-            const waktuAmbil = new Date().toLocaleString();
-            ref.update({
-              status: "diambil",
-              driver_id: driverUID,
-              waktu_ambil: waktuAmbil
-            });
-
-            if (window.AppInventor) {
-              window.AppInventor.setWebViewString(JSON.stringify({
-                ...data,
-                status: "diambil",
-                order_id: uid,
-                user_id: uid,
-                driver_id: driverUID,
-                waktu_ambil: waktuAmbil
-              }));
-            }
-
-            alert("✅ Order berhasil diambil!");
-          } else {
-            alert("❌ Order sudah diambil oleh driver lain.");
-          }
-        });
+          listDiv.appendChild(div);
+        }
       }
+    });
+
+    window.ambilPesanan = function(userKey) {
+      if (!driverID) {
+        alert("Driver ID tidak ditemukan di URL.");
+        return;
+      }
+      const orderRef = firebase.database().ref(`${bucket}/${userKey}`);
+      orderRef.update({
+        status: "diproses",
+        driver_id: driverID
+      }).then(() => {
+        alert("Order berhasil diambil oleh " + driverID);
+      });
     }
-  </script>
-</body>
+  };
+</script></body>
 </html>
