@@ -34,6 +34,11 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     }
 
+    .order.cancelled {
+      border-color: #dc3545;
+      background-color: #fff0f0;
+    }
+
     .order-content {
       display: flex;
       flex-wrap: wrap;
@@ -52,6 +57,10 @@
       font-size: 18px;
     }
 
+    .order.cancelled strong {
+      color: #dc3545;
+    }
+
     button {
       margin-top: 10px;
       padding: 10px 15px;
@@ -66,6 +75,10 @@
     button:disabled {
       background-color: #cccccc;
       cursor: not-allowed;
+    }
+
+    .cancelled-btn {
+      background-color: #dc3545;
     }
 
     @media (max-width: 500px) {
@@ -100,6 +113,13 @@
     const db = firebase.database().ref("GoMotorcycle");
     const orderList = document.getElementById("orderList");
 
+    // Fungsi untuk mengirim data ke App Inventor
+    function sendToAppInventor(data) {
+      if (window.AppInventor) {
+        window.AppInventor.setWebViewString(JSON.stringify(data));
+      }
+    }
+
     db.on("value", snapshot => {
       orderList.innerHTML = "";
       const data = snapshot.val();
@@ -114,8 +134,11 @@
           try { order = JSON.parse(order); } catch {}
         }
 
+        // Cek jika order dibatalkan
+        const isCancelled = order.status === "order dibatalkan";
+        
         const div = document.createElement("div");
-        div.className = "order";
+        div.className = `order ${isCancelled ? 'cancelled' : ''}`;
         div.innerHTML = `
           <strong>🧍‍♂️ ${order.name || '-'}</strong>
           <div class="order-content">
@@ -129,11 +152,25 @@
             <span>⏰ Waktu: ${order.waktu_order || '-'}</span>
             <span>📌 Status: ${order.status || '-'}</span>
           </div>
-          <button onclick="ambilOrder('${uid}')" ${order.status !== 'menunggu driver' ? 'disabled' : ''}>
-            Ambil Order
+          <button 
+            onclick="ambilOrder('${uid}')" 
+            ${order.status !== 'menunggu driver' ? 'disabled' : ''}
+            ${isCancelled ? 'class="cancelled-btn"' : ''}
+          >
+            ${isCancelled ? 'Order Dibatalkan' : 'Ambil Order'}
           </button>
         `;
         orderList.appendChild(div);
+
+        // Jika order dibatalkan, kirim notifikasi
+        if (isCancelled && order.driver_id === driverUID) {
+          sendToAppInventor({
+            type: "order_dibatalkan",
+            order_id: uid,
+            message: "Order telah dibatalkan oleh pelanggan",
+            data: order
+          });
+        }
       });
     });
 
@@ -152,15 +189,14 @@
             waktu_ambil: new Date().toLocaleString()
           });
 
-          if (window.AppInventor) {
-            window.AppInventor.setWebViewString(JSON.stringify({
-              ...data,
-              status: "diambil",
-              order_id: uid,
-              driver_id: driverUID,
-              waktu_ambil: new Date().toLocaleString()
-            }));
-          }
+          sendToAppInventor({
+            ...data,
+            type: "order_diambil",
+            status: "diambil",
+            order_id: uid,
+            driver_id: driverUID,
+            waktu_ambil: new Date().toLocaleString()
+          });
 
           alert("✅ Order berhasil diambil!");
         } else {
@@ -168,6 +204,25 @@
         }
       });
     }
+
+    // Listen untuk perubahan status order
+    db.on("child_changed", snapshot => {
+      const order = snapshot.val();
+      if (typeof order === "string") {
+        try { order = JSON.parse(order); } catch {}
+      }
+      
+      if (order.status === "order dibatalkan" && order.driver_id === driverUID) {
+        sendToAppInventor({
+          type: "order_dibatalkan",
+          order_id: snapshot.key,
+          message: "Order telah dibatalkan oleh pelanggan",
+          data: order
+        });
+        
+        alert(`⚠️ Order ${snapshot.key} telah dibatalkan`);
+      }
+    });
   </script>
 </body>
 </html>
