@@ -43,11 +43,18 @@
     .btn-ambil:hover {
       background-color: #0056b3;
     }
+    .order-count {
+      text-align: center;
+      margin-bottom: 15px;
+      font-weight: bold;
+      color: #007BFF;
+    }
   </style>
 </head>
 <body>
 <div class="container">
   <h2>Pesanan Menunggu Driver</h2>
+  <div id="order-count" class="order-count">Memuat daftar pesanan...</div>
   <div id="list"></div>
 </div>
 
@@ -59,6 +66,7 @@ const firebaseURL = urlParams.get("firebase_url");
 const firebaseKey = urlParams.get("firebase_key");
 const bucket = urlParams.get("firebase_bucket");
 const driverID = urlParams.get("driver") || "";
+const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
 
 if (!firebaseURL || !firebaseKey || !bucket) {
   alert("URL firebase, key, atau bucket belum lengkap.");
@@ -92,9 +100,12 @@ script2.onload = () => {
 
     const listDiv = document.getElementById("list");
     listDiv.innerHTML = "";
+    
+    let waitingOrders = 0;
     for (let key in data) {
       const order = data[key];
       if (order.status === "menunggudriver") {
+        waitingOrders++;
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
@@ -104,6 +115,7 @@ script2.onload = () => {
           <label>Jarak:</label> ${order.jarak || "-"}<br>
           <label>Durasi:</label> ${order.durasi || "-"}<br>
           <label>Kendaraan:</label> ${order.vehicle || "-"}<br>
+          <label>Harga:</label> Rp${order.harga ? order.harga.toLocaleString() : "-"}<br>
           <button class="btn-ambil">Ambil Order</button>
         `;
         card.querySelector(".btn-ambil").onclick = () => {
@@ -123,27 +135,29 @@ script2.onload = () => {
             to_lng: order.to_lng || "",
             harga: order.harga || "",
             latlong_pengorder: order.latlong_pengorder || "",
-            driver: driverID
+            driver_id: driverID,
+            driver_name: namaDriver
           };
 
-          // 1. TETAP mengirim data ke Firebase
           db.ref(bucket + "/" + key).update({
             status: "diambil",
-            driverID: driverID
+            driverID: driverID,
+            driverName: namaDriver
           });
 
-          // 2. MODIFIKASI: Gunakan window.AppInventor untuk Kodular
           if (window.AppInventor) {
             window.AppInventor.setWebViewString(JSON.stringify(dataKirim));
-          }
-          // Fallback untuk WebView lain (opsional)
-          else if (window.WebViewInterface) {
+          } else if (window.WebViewInterface) {
             window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
           }
         };
         listDiv.appendChild(card);
       }
     }
+    
+    document.getElementById("order-count").textContent = 
+      waitingOrders === 0 ? "Tidak ada pesanan menunggu" : 
+      `Total Pesanan Menunggu: ${waitingOrders}`;
   });
 };
 </script>
