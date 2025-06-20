@@ -5,7 +5,6 @@
   <title>Daftar Pesanan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* CSS tetap sama seperti sebelumnya */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -124,12 +123,27 @@
       z-index: 1001;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+    .error-message {
+      color: #dc3545;
+      text-align: center;
+      padding: 10px;
+      background: #ffecec;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body>
 <div class="container">
   <div id="order-count" class="order-count">Memuat daftar pesanan...</div>
+  <div id="error-display"></div>
   <div id="list"></div>
+  <div id="loading" class="loading" style="display: none;">Memuat data...</div>
 </div>
 
 <div id="notification-overlay" class="notification-overlay">
@@ -140,26 +154,18 @@
   <div class="order-details" id="order-details"></div>
 </div>
 
-<!-- Menggunakan URL sound dari GitHub yang benar -->
 <audio id="notifSound" src="https://raw.githubusercontent.com/085757081073/Order/main/bell-notification-337658.mp3" preload="auto"></audio>
 <audio id="loopSound" src="https://raw.githubusercontent.com/085757081073/Order/main/bell-notification-337658.mp3" preload="auto" loop></audio>
 
 <script>
-/* JavaScript tetap sama seperti sebelumnya */
-const urlParams = new URLSearchParams(window.location.search);
-const firebaseURL = urlParams.get("firebase_url");
-const firebaseKey = urlParams.get("firebase_key");
-const bucket = urlParams.get("firebase_bucket");
-const driverID = urlParams.get("driver") || "";
-const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
+// Fungsi untuk menampilkan error
+function showError(message) {
+  const errorDiv = document.getElementById('error-display');
+  errorDiv.innerHTML = `<div class="error-message">${message}</div>`;
+  console.error(message);
+}
 
-// Variabel untuk state aplikasi
-let driverPosition = null;
-let currentNotification = null;
-let notificationTimeout = null;
-let soundInterval = null;
-
-// Fungsi utilitas
+// Fungsi untuk menghitung jarak
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -171,7 +177,149 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// ... (kode JavaScript lainnya tetap sama persis)
+// Fungsi utama
+async function initializeApp() {
+  // Ambil parameter URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const firebaseURL = urlParams.get("firebase_url");
+  const firebaseKey = urlParams.get("firebase_key");
+  const bucket = urlParams.get("firebase_bucket");
+  const driverID = urlParams.get("driver") || "";
+  const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
+
+  // Validasi parameter
+  if (!firebaseURL || !firebaseKey || !bucket) {
+    showError("Parameter URL tidak lengkap! Pastikan firebase_url, firebase_key, dan firebase_bucket ada di URL");
+    return;
+  }
+
+  // Tampilkan loading
+  document.getElementById('loading').style.display = 'block';
+
+  try {
+    // Load Firebase scripts
+    await loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js");
+    await loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js");
+
+    // Inisialisasi Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp({
+        apiKey: firebaseKey,
+        databaseURL: firebaseURL
+      });
+      console.log("Firebase berhasil diinisialisasi");
+    }
+
+    const db = firebase.database();
+    
+    // Load data dari Firebase
+    db.ref(bucket).on('value', (snapshot) => {
+      document.getElementById('loading').style.display = 'none';
+      
+      if (!snapshot.exists()) {
+        showError(`Data tidak ditemukan di path: ${bucket}. Periksa path database Anda.`);
+        return;
+      }
+
+      const data = snapshot.val();
+      console.log("Data diterima dari Firebase:", data);
+      
+      const listDiv = document.getElementById("list");
+      listDiv.innerHTML = "";
+      let counter = 0;
+
+      for (const key in data) {
+        if (!data.hasOwnProperty(key)) continue;
+        
+        const order = data[key];
+        if (order.status && order.status.toLowerCase().includes("menunggudriver")) {
+          counter++;
+          
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
+            <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
+            <div class="details">
+              <span><strong>Waktu:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : "-"}</span>
+              <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
+            </div>
+            <div class="price-distance">
+              <span>Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
+              <span>${order.jarak || "-"}</span>
+            </div>
+          `;
+          
+          card.onclick = () => showOrderDetail(order);
+          listDiv.appendChild(card);
+        }
+      }
+
+      document.getElementById("order-count").textContent = 
+        counter ? `${counter} pesanan menunggu` : "Tidak ada pesanan yang menunggu";
+    }, (error) => {
+      document.getElementById('loading').style.display = 'none';
+      showError(`Gagal memuat data: ${error.message}`);
+    });
+
+  } catch (error) {
+    document.getElementById('loading').style.display = 'none';
+    showError(`Terjadi kesalahan: ${error.message}`);
+  }
+}
+
+// Fungsi untuk memuat script
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`Gagal memuat script: ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+// Fungsi untuk menampilkan detail order
+function showOrderDetail(order) {
+  const mapUrl = order.from_lat && order.from_lng && order.to_lat && order.to_lng 
+    ? `https://map.rasitech.org/?direction=%7B%22origin%22:%22${order.from_lat},${order.from_lng}%22,%22destination%22:%22${order.to_lat},${order.to_lng}%22%7D`
+    : '#';
+  
+  document.getElementById('notification-map').src = mapUrl;
+  document.getElementById('order-details').innerHTML = `
+    <div class="address"><strong>Detail Pesanan:</strong></div>
+    <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
+    <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
+    <div class="details">
+      <span><strong>Waktu Order:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : "-"}</span>
+      <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
+    </div>
+    <div class="price-distance">
+      <span><strong>Harga:</strong> Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
+      <span><strong>Jarak:</strong> ${order.jarak || "-"}</span>
+    </div>
+    <div class="action-buttons">
+      <button class="btn btn-tolak" id="reject-order">Tolak</button>
+      <button class="btn btn-ambil" id="accept-order">Ambil Order</button>
+    </div>
+  `;
+
+  document.getElementById('notification-overlay').style.display = 'block';
+  document.getElementById('reject-order').onclick = () => {
+    document.getElementById('notification-overlay').style.display = 'none';
+  };
+  document.getElementById('accept-order').onclick = () => {
+    // Implementasi fungsi ambil order
+    alert('Order diambil!');
+    document.getElementById('notification-overlay').style.display = 'none';
+  };
+  document.getElementById('close-notification').onclick = () => {
+    document.getElementById('notification-overlay').style.display = 'none';
+  };
+}
+
+// Jalankan aplikasi saat halaman siap
+document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
 </body>
 </html>
