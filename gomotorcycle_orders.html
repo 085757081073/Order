@@ -373,22 +373,33 @@ script2.onload = () => {
             minute: '2-digit'
           }) : '-';
         
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
-          <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
-          <div class="details">
-            <span><strong>${orderTime}</strong></span>
-            <span>${order.durasi || "-"}</span>
-          </div>
-          <div class="price-distance">
-            <span>Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
-            <span>${order.jarak || "-"}</span>
-          </div>
-        `;
-        
-        card.onclick = () => showNotification(order);
+        // DENGAN INI - Versi baru dengan tombol
+const card = document.createElement("div");
+card.className = "card";
+card.innerHTML = `
+  <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
+  <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
+  <div class="details">
+    <span><strong>${orderTime}</strong></span>
+    <span>${order.durasi || "-"}</span>
+  </div>
+  <div class="price-distance">
+    <span>Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
+    <span>${order.jarak || "-"}</span>
+  </div>
+  <button class="btn-ambil" style="width:100%;margin-top:10px;">Ambil Order</button>
+`;
+
+// Tambahkan event listener untuk tombol
+card.querySelector('.btn-ambil').addEventListener('click', (e) => {
+  e.stopPropagation(); // Mencegah event bubbling ke card
+  acceptOrder(order);
+});
+
+// Tetap pertahankan klik pada card untuk menampilkan detail
+card.addEventListener('click', () => {
+  showNotification(order);
+});
         listDiv.appendChild(card);
       }
     }
