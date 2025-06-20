@@ -76,29 +76,38 @@
       font-size: 14px;
       color: #666;
     }
-    .map-link {
-      display: block;
-      margin-top: 10px;
-      padding: 8px;
-      background: #e9ecef;
-      border-radius: 5px;
-      text-align: center;
-      color: #007BFF;
-      text-decoration: none;
-      font-size: 13px;
-    }
-    .notification {
+    .notification-card {
       position: fixed;
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: #28a745;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 500px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
       z-index: 1000;
-      display: none;
+      animation: slideIn 0.5s forwards;
+    }
+    @keyframes slideIn {
+      from { top: -100px; opacity: 0; }
+      to { top: 20px; opacity: 1; }
+    }
+    .map-iframe {
+      width: 100%;
+      height: 200px;
+      border: none;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    .close-notification {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      font-size: 20px;
+      cursor: pointer;
+      color: #999;
     }
   </style>
 </head>
@@ -108,9 +117,13 @@
   <div id="list"></div>
 </div>
 
-<div id="notification" class="notification">Pesanan baru dalam jarak dekat!</div>
+<div id="notification-card" class="notification-card" style="display: none;">
+  <span class="close-notification" id="close-notification">&times;</span>
+  <div id="notification-content"></div>
+</div>
 
 <audio id="notifSound" src="https://085757081073.github.io/Order/arpeggio-467.mp3" preload="auto"></audio>
+<audio id="loopSound" src="https://085757081073.github.io/Order/arpeggio-467.mp3" preload="auto" loop></audio>
 
 <script>
 const urlParams = new URLSearchParams(window.location.search);
@@ -120,12 +133,11 @@ const bucket = urlParams.get("firebase_bucket");
 const driverID = urlParams.get("driver") || "";
 const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
 
-// Variabel untuk menyimpan posisi driver
+// Variabel untuk menyimpan posisi driver dan notifikasi
 let driverPosition = null;
-
-if (!firebaseURL || !firebaseKey || !bucket) {
-  alert("URL firebase, key, atau bucket belum lengkap.");
-}
+let currentNotification = null;
+let notificationTimeout = null;
+let soundInterval = null;
 
 // Fungsi untuk menghitung jarak antara dua koordinat (dalam km)
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -157,6 +169,118 @@ function getDriverLocation() {
     );
   } else {
     alert("Geolocation tidak didukung di browser ini.");
+  }
+}
+
+// Fungsi untuk menampilkan notifikasi
+function showNotification(order, distance) {
+  // Hentikan notifikasi sebelumnya jika ada
+  if (currentNotification) {
+    clearNotification();
+  }
+  
+  // Format waktu order
+  const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleString() : "-";
+  
+  // URL untuk peta
+  const mapUrl = order.from_lat && order.from_lng && order.to_lat && order.to_lng 
+    ? `https://map.rasitech.org/?direction=%7B%22origin%22:%22${order.from_lat},${order.from_lng}%22,%22destination%22:%22${order.to_lat},${order.to_lng}%22%7D`
+    : "#";
+  
+  // Update konten notifikasi
+  document.getElementById("notification-content").innerHTML = `
+    <div class="address"><strong>Pesanan Dekat (${distance.toFixed(1)} km):</strong></div>
+    <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
+    <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
+    <div class="details">
+      <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
+      <span><strong>Waktu Order:</strong> ${orderTime}</span>
+    </div>
+    <div class="price-distance">
+      <span>Rp${order.harga ? order.harga.toLocaleString() : "-"}</span>
+      <span>${order.jarak || "-"}</span>
+    </div>
+    <iframe class="map-iframe" src="${mapUrl}" allowfullscreen></iframe>
+    <div class="action-buttons">
+      <button class="btn btn-ambil" id="accept-order">Ambil Order</button>
+      <button class="btn btn-tolak" id="reject-order">Tolak</button>
+    </div>
+  `;
+  
+  // Tampilkan notifikasi
+  document.getElementById("notification-card").style.display = "block";
+  currentNotification = order;
+  
+  // Mulai putar suara notifikasi berulang
+  const loopSound = document.getElementById("loopSound");
+  loopSound.play().catch(e => console.log("Sound play error:", e));
+  soundInterval = setInterval(() => {
+    loopSound.play().catch(e => console.log("Sound play error:", e));
+  }, 3000);
+  
+  // Set timeout 10 detik untuk notifikasi
+  notificationTimeout = setTimeout(() => {
+    clearNotification();
+  }, 10000);
+  
+  // Event listener untuk tombol
+  document.getElementById("accept-order").onclick = () => {
+    acceptOrder(order);
+    clearNotification();
+  };
+  
+  document.getElementById("reject-order").onclick = () => {
+    clearNotification();
+  };
+  
+  document.getElementById("close-notification").onclick = () => {
+    clearNotification();
+  };
+}
+
+// Fungsi untuk membersihkan notifikasi
+function clearNotification() {
+  document.getElementById("notification-card").style.display = "none";
+  clearTimeout(notificationTimeout);
+  clearInterval(soundInterval);
+  document.getElementById("loopSound").pause();
+  currentNotification = null;
+}
+
+// Fungsi untuk menerima order
+function acceptOrder(order) {
+  const dataKirim = {
+    status: "order_ambil_berhasil",
+    userID: order.userID || "",
+    name: order.name || "",
+    alamat_a: order.alamat_a || "",
+    alamat_b: order.alamat_b || "",
+    harga_total: order.harga_total || "",
+    jarak: order.jarak || "",
+    durasi: order.durasi || "",
+    vehicle: order.vehicle || "",
+    from_lat: order.from_lat || "",
+    from_lng: order.from_lng || "",
+    to_lat: order.to_lat || "",
+    to_lng: order.to_lng || "",
+    harga: order.harga || "",
+    latlong_pengorder: order.latlong_pengorder || "",
+    driver_id: driverID,
+    driver_name: namaDriver
+  };
+
+  if (firebase.apps.length > 0) {
+    firebase.database().ref(bucket + "/" + order.key).update({
+      status: "diambil",
+      driverID: driverID,
+      driverName: namaDriver
+    });
+  }
+
+  if (window.AppInventor) {
+    window.AppInventor.setWebViewString(JSON.stringify(dataKirim));
+  } else if (window.WebViewInterface) {
+    window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
   }
 }
 
@@ -196,10 +320,10 @@ script2.onload = () => {
     for (let key in data) {
       const order = data[key];
       if (order.status === "menunggudriver") {
+        order.key = key; // Simpan key untuk update nanti
         waitingOrders++;
         
         // Cek jarak jika driverPosition tersedia
-        let isNearby = false;
         if (driverPosition && order.from_lat && order.from_lng) {
           const distance = calculateDistance(
             driverPosition.lat,
@@ -207,30 +331,16 @@ script2.onload = () => {
             parseFloat(order.from_lat),
             parseFloat(order.from_lng)
           );
-          isNearby = distance < 2; // Jika kurang dari 2km
           
-          if (isNearby) {
-            // Tampilkan notifikasi
-            const notification = document.getElementById("notification");
-            notification.style.display = "block";
-            notification.textContent = `Pesanan baru (${distance.toFixed(1)} km dari Anda)!`;
-            setTimeout(() => {
-              notification.style.display = "none";
-            }, 5000);
+          if (distance < 2 && !currentNotification) {
+            showNotification(order, distance);
           }
         }
 
+        // Buat card untuk list biasa
+        const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleString() : "-";
         const card = document.createElement("div");
         card.className = "card";
-        
-        // Format waktu order
-        const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleString() : "-";
-        
-        // URL untuk peta
-        const mapUrl = order.from_lat && order.from_lng && order.to_lat && order.to_lng 
-          ? `https://map.rasitech.org/?direction=%7B%22origin%22:%22${order.from_lat},${order.from_lng}%22,%22destination%22:%22${order.to_lat},${order.to_lng}%22%7D`
-          : "#";
-        
         card.innerHTML = `
           <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
           <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
@@ -242,53 +352,12 @@ script2.onload = () => {
             <span>Rp${order.harga ? order.harga.toLocaleString() : "-"}</span>
             <span>${order.jarak || "-"}</span>
           </div>
-          <a href="${mapUrl}" target="_blank" class="map-link">Lihat Rute di Peta</a>
-          <div class="action-buttons">
-            <button class="btn btn-ambil">Ambil Order</button>
-            ${isNearby ? '<button class="btn btn-tolak">Tolak</button>' : ''}
-          </div>
+          <button class="btn btn-ambil">Ambil Order</button>
         `;
         
         card.querySelector(".btn-ambil").onclick = () => {
-          const dataKirim = {
-            status: "order_ambil_berhasil",
-            userID: order.userID || "",
-            name: order.name || "",
-            alamat_a: order.alamat_a || "",
-            alamat_b: order.alamat_b || "",
-            harga_total: order.harga_total || "",
-            jarak: order.jarak || "",
-            durasi: order.durasi || "",
-            vehicle: order.vehicle || "",
-            from_lat: order.from_lat || "",
-            from_lng: order.from_lng || "",
-            to_lat: order.to_lat || "",
-            to_lng: order.to_lng || "",
-            harga: order.harga || "",
-            latlong_pengorder: order.latlong_pengorder || "",
-            driver_id: driverID,
-            driver_name: namaDriver
-          };
-
-          db.ref(bucket + "/" + key).update({
-            status: "diambil",
-            driverID: driverID,
-            driverName: namaDriver
-          });
-
-          if (window.AppInventor) {
-            window.AppInventor.setWebViewString(JSON.stringify(dataKirim));
-          } else if (window.WebViewInterface) {
-            window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
-          }
+          acceptOrder(order);
         };
-        
-        if (isNearby) {
-          card.querySelector(".btn-tolak").onclick = () => {
-            // Tambahkan logika untuk menolak pesanan jika diperlukan
-            alert("Pesanan ditolak");
-          };
-        }
         
         listDiv.appendChild(card);
       }
