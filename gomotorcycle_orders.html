@@ -23,7 +23,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       font-size: 14px;
       line-height: 1.4;
-      cursor: pointer;
     }
     .address {
       margin: 5px 0;
@@ -50,78 +49,20 @@
       font-size: 14px;
       color: #666;
     }
-    .notification-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 1000;
-      display: none;
-    }
-    .map-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 50vh;
-    }
-    .map-iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-    .order-details {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      padding: 15px;
-      border-top-left-radius: 15px;
-      border-top-right-radius: 15px;
-      max-height: 40vh;
-      overflow-y: auto;
-    }
-    .action-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-    }
-    .btn {
-      flex: 1;
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      text-align: center;
-      border: none;
-      font-weight: bold;
-    }
     .btn-ambil {
+      width: 100%;
       background-color: #007BFF;
       color: #fff;
-    }
-    .btn-tolak {
-      background-color: #dc3545;
-      color: #fff;
-    }
-    .close-notification {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: white;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
       cursor: pointer;
-      z-index: 1001;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      font-size: 14px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .btn-ambil:hover {
+      background-color: #0056b3;
     }
     .loading {
       text-align: center;
@@ -146,16 +87,7 @@
   <div id="loading" class="loading" style="display: none;">Memuat data...</div>
 </div>
 
-<div id="notification-overlay" class="notification-overlay">
-  <span class="close-notification" id="close-notification">&times;</span>
-  <div class="map-container">
-    <iframe id="notification-map" class="map-iframe"></iframe>
-  </div>
-  <div class="order-details" id="order-details"></div>
-</div>
-
 <audio id="notifSound" src="https://raw.githubusercontent.com/085757081073/Order/main/bell-notification-337658.mp3" preload="auto"></audio>
-<audio id="loopSound" src="https://raw.githubusercontent.com/085757081073/Order/main/bell-notification-337658.mp3" preload="auto" loop></audio>
 
 <script>
 // Fungsi untuk menampilkan error
@@ -163,18 +95,6 @@ function showError(message) {
   const errorDiv = document.getElementById('error-display');
   errorDiv.innerHTML = `<div class="error-message">${message}</div>`;
   console.error(message);
-}
-
-// Fungsi untuk menghitung jarak
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
 }
 
 // Fungsi utama
@@ -241,16 +161,21 @@ async function initializeApp() {
             <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
             <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
             <div class="details">
-              <span><strong>Waktu:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : "-"}</span>
+              <span><strong>Waktu:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleTimeString() : "-"}</span>
               <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
             </div>
             <div class="price-distance">
               <span>Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
               <span>${order.jarak || "-"}</span>
             </div>
+            <button class="btn-ambil" data-orderid="${key}">Ambil Order</button>
           `;
           
-          card.onclick = () => showOrderDetail(order);
+          // Tambahkan event listener untuk tombol ambil
+          card.querySelector('.btn-ambil').addEventListener('click', () => {
+            acceptOrder(key, order);
+          });
+          
           listDiv.appendChild(card);
         }
       }
@@ -279,43 +204,54 @@ function loadScript(src) {
   });
 }
 
-// Fungsi untuk menampilkan detail order
-function showOrderDetail(order) {
-  const mapUrl = order.from_lat && order.from_lng && order.to_lat && order.to_lng 
-    ? `https://map.rasitech.org/?direction=%7B%22origin%22:%22${order.from_lat},${order.from_lng}%22,%22destination%22:%22${order.to_lat},${order.to_lng}%22%7D`
-    : '#';
-  
-  document.getElementById('notification-map').src = mapUrl;
-  document.getElementById('order-details').innerHTML = `
-    <div class="address"><strong>Detail Pesanan:</strong></div>
-    <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
-    <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
-    <div class="details">
-      <span><strong>Waktu Order:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : "-"}</span>
-      <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
-    </div>
-    <div class="price-distance">
-      <span><strong>Harga:</strong> Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
-      <span><strong>Jarak:</strong> ${order.jarak || "-"}</span>
-    </div>
-    <div class="action-buttons">
-      <button class="btn btn-tolak" id="reject-order">Tolak</button>
-      <button class="btn btn-ambil" id="accept-order">Ambil Order</button>
-    </div>
-  `;
+// Fungsi untuk menerima order
+function acceptOrder(orderKey, orderData) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const driverID = urlParams.get("driver") || "";
+  const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
+  const bucket = urlParams.get("firebase_bucket");
 
-  document.getElementById('notification-overlay').style.display = 'block';
-  document.getElementById('reject-order').onclick = () => {
-    document.getElementById('notification-overlay').style.display = 'none';
+  const dataKirim = {
+    status: "order_ambil_berhasil",
+    userID: orderData.userID || "",
+    name: orderData.name || "",
+    alamat_a: orderData.alamat_a || "",
+    alamat_b: orderData.alamat_b || "",
+    harga_total: orderData.harga_total || "",
+    jarak: orderData.jarak || "",
+    durasi: orderData.durasi || "",
+    vehicle: orderData.vehicle || "",
+    from_lat: orderData.from_lat || "",
+    from_lng: orderData.from_lng || "",
+    to_lat: orderData.to_lat || "",
+    to_lng: orderData.to_lng || "",
+    harga: orderData.harga || "",
+    latlong_pengorder: orderData.latlong_pengorder || "",
+    driver_id: driverID,
+    driver_name: namaDriver
   };
-  document.getElementById('accept-order').onclick = () => {
-    // Implementasi fungsi ambil order
-    alert('Order diambil!');
-    document.getElementById('notification-overlay').style.display = 'none';
-  };
-  document.getElementById('close-notification').onclick = () => {
-    document.getElementById('notification-overlay').style.display = 'none';
-  };
+
+  // Update status di Firebase
+  firebase.database().ref(bucket + "/" + orderKey).update({
+    status: "diambil",
+    driverID: driverID,
+    driverName: namaDriver,
+    waktu_diambil: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    console.log("Order berhasil diambil");
+    // Kirim data ke App Inventor jika ada
+    if (window.AppInventor) {
+      window.AppInventor.setWebViewString(JSON.stringify(dataKirim));
+    } else if (window.WebViewInterface) {
+      window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
+    }
+    // Tampilkan notifikasi sukses
+    document.getElementById('notifSound').play();
+    alert("Order berhasil diambil!");
+  }).catch(error => {
+    console.error("Gagal update order:", error);
+    alert("Gagal mengambil order: " + error.message);
+  });
 }
 
 // Jalankan aplikasi saat halaman siap
