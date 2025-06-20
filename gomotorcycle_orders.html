@@ -18,7 +18,7 @@
       background: #fff;
       border-radius: 8px;
       padding: 12px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       font-size: 14px;
       line-height: 1.4;
@@ -29,31 +29,76 @@
       background: #f8f9fa;
       border-radius: 5px;
     }
+    .details {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #666;
+    }
     .price-distance {
       display: flex;
       justify-content: space-between;
       margin-top: 8px;
       font-weight: bold;
     }
-    .btn-ambil {
-      width: 100%;
-      background-color: #007BFF;
-      color: #fff;
-      border: none;
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .btn {
+      flex: 1;
       padding: 8px;
       border-radius: 5px;
       cursor: pointer;
       font-size: 14px;
-      margin-top: 8px;
+      text-align: center;
+      border: none;
+    }
+    .btn-ambil {
+      background-color: #007BFF;
+      color: #fff;
     }
     .btn-ambil:hover {
       background-color: #0056b3;
+    }
+    .btn-tolak {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    .btn-tolak:hover {
+      background-color: #bb2d3b;
     }
     .order-count {
       text-align: center;
       margin-bottom: 10px;
       font-size: 14px;
       color: #666;
+    }
+    .map-link {
+      display: block;
+      margin-top: 10px;
+      padding: 8px;
+      background: #e9ecef;
+      border-radius: 5px;
+      text-align: center;
+      color: #007BFF;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: none;
     }
   </style>
 </head>
@@ -62,6 +107,8 @@
   <div id="order-count" class="order-count">Memuat daftar pesanan...</div>
   <div id="list"></div>
 </div>
+
+<div id="notification" class="notification">Pesanan baru dalam jarak dekat!</div>
 
 <audio id="notifSound" src="https://085757081073.github.io/Order/arpeggio-467.mp3" preload="auto"></audio>
 
@@ -73,9 +120,48 @@ const bucket = urlParams.get("firebase_bucket");
 const driverID = urlParams.get("driver") || "";
 const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
 
+// Variabel untuk menyimpan posisi driver
+let driverPosition = null;
+
 if (!firebaseURL || !firebaseKey || !bucket) {
   alert("URL firebase, key, atau bucket belum lengkap.");
 }
+
+// Fungsi untuk menghitung jarak antara dua koordinat (dalam km)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius bumi dalam km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// Fungsi untuk mendapatkan lokasi driver
+function getDriverLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(
+      (position) => {
+        driverPosition = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+    );
+  } else {
+    alert("Geolocation tidak didukung di browser ini.");
+  }
+}
+
+// Panggil fungsi untuk mendapatkan lokasi driver
+getDriverLocation();
 
 const script = document.createElement("script");
 script.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js";
@@ -111,17 +197,58 @@ script2.onload = () => {
       const order = data[key];
       if (order.status === "menunggudriver") {
         waitingOrders++;
+        
+        // Cek jarak jika driverPosition tersedia
+        let isNearby = false;
+        if (driverPosition && order.from_lat && order.from_lng) {
+          const distance = calculateDistance(
+            driverPosition.lat,
+            driverPosition.lng,
+            parseFloat(order.from_lat),
+            parseFloat(order.from_lng)
+          );
+          isNearby = distance < 2; // Jika kurang dari 2km
+          
+          if (isNearby) {
+            // Tampilkan notifikasi
+            const notification = document.getElementById("notification");
+            notification.style.display = "block";
+            notification.textContent = `Pesanan baru (${distance.toFixed(1)} km dari Anda)!`;
+            setTimeout(() => {
+              notification.style.display = "none";
+            }, 5000);
+          }
+        }
+
         const card = document.createElement("div");
         card.className = "card";
+        
+        // Format waktu order
+        const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleString() : "-";
+        
+        // URL untuk peta
+        const mapUrl = order.from_lat && order.from_lng && order.to_lat && order.to_lng 
+          ? `https://map.rasitech.org/?direction=%7B%22origin%22:%22${order.from_lat},${order.from_lng}%22,%22destination%22:%22${order.to_lat},${order.to_lng}%22%7D`
+          : "#";
+        
         card.innerHTML = `
           <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
           <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
+          <div class="details">
+            <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
+            <span><strong>Waktu Order:</strong> ${orderTime}</span>
+          </div>
           <div class="price-distance">
             <span>Rp${order.harga ? order.harga.toLocaleString() : "-"}</span>
             <span>${order.jarak || "-"}</span>
           </div>
-          <button class="btn-ambil">Ambil Order</button>
+          <a href="${mapUrl}" target="_blank" class="map-link">Lihat Rute di Peta</a>
+          <div class="action-buttons">
+            <button class="btn btn-ambil">Ambil Order</button>
+            ${isNearby ? '<button class="btn btn-tolak">Tolak</button>' : ''}
+          </div>
         `;
+        
         card.querySelector(".btn-ambil").onclick = () => {
           const dataKirim = {
             status: "order_ambil_berhasil",
@@ -155,6 +282,14 @@ script2.onload = () => {
             window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
           }
         };
+        
+        if (isNearby) {
+          card.querySelector(".btn-tolak").onclick = () => {
+            // Tambahkan logika untuk menolak pesanan jika diperlukan
+            alert("Pesanan ditolak");
+          };
+        }
+        
         listDiv.appendChild(card);
       }
     }
