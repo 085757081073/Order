@@ -126,14 +126,20 @@ script2.onload = () => {
             driver: driverID
           };
 
+          // 1. TETAP mengirim data ke Firebase
           db.ref(bucket + "/" + key).update({
             status: "diambil",
             driverID: driverID
           });
 
-          if (window.WebViewInterface) {
-  window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
-}
+          // 2. MODIFIKASI: Gunakan window.AppInventor untuk Kodular
+          if (window.AppInventor) {
+            window.AppInventor.setWebViewString(JSON.stringify(dataKirim));
+          }
+          // Fallback untuk WebView lain (opsional)
+          else if (window.WebViewInterface) {
+            window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
+          }
         };
         listDiv.appendChild(card);
       }
