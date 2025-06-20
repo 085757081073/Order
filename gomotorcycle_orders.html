@@ -387,8 +387,32 @@ card.innerHTML = `
     <span>Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
     <span>${order.jarak || "-"}</span>
   </div>
-  <button class="btn-ambil" style="width:100%;margin-top:10px;">Ambil Order</button>
+  <button class="btn-ambil" style="
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px 0;
+    font-size: 16px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+  ">AMBIL ORDER</button>
 `;
+
+// Event untuk tombol (TIDAK PERLU DIGANTI, tetap pakai yang ini)
+card.querySelector('.btn-ambil').addEventListener('click', (e) => {
+  e.stopPropagation();
+  acceptOrder(order);
+});
+
+// Event untuk card (TIDAK PERLU DIGANTI)
+card.addEventListener('click', () => {
+  showNotification(order);
+});
+
+listDiv.appendChild(card);
 
 // Tambahkan event listener untuk tombol
 card.querySelector('.btn-ambil').addEventListener('click', (e) => {
