@@ -13,6 +13,7 @@
     }
     .container {
       padding: 15px;
+      margin-bottom: 70px;
     }
     .card {
       background: #fff;
@@ -22,6 +23,7 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       font-size: 14px;
       line-height: 1.4;
+      cursor: pointer;
     }
     .address {
       margin: 5px 0;
@@ -42,72 +44,84 @@
       margin-top: 8px;
       font-weight: bold;
     }
-    .action-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .btn {
-      flex: 1;
-      padding: 8px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-      text-align: center;
-      border: none;
-    }
-    .btn-ambil {
-      background-color: #007BFF;
-      color: #fff;
-    }
-    .btn-ambil:hover {
-      background-color: #0056b3;
-    }
-    .btn-tolak {
-      background-color: #dc3545;
-      color: #fff;
-    }
-    .btn-tolak:hover {
-      background-color: #bb2d3b;
-    }
     .order-count {
       text-align: center;
       margin-bottom: 10px;
       font-size: 14px;
       color: #666;
     }
-    .notification-card {
+    .notification-overlay {
       position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 500px;
-      background: #fff;
-      border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
       z-index: 1000;
-      animation: slideIn 0.5s forwards;
+      display: none;
     }
-    @keyframes slideIn {
-      from { top: -100px; opacity: 0; }
-      to { top: 20px; opacity: 1; }
+    .map-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50vh;
     }
     .map-iframe {
       width: 100%;
-      height: 200px;
+      height: 100%;
       border: none;
-      border-radius: 5px;
-      margin-top: 10px;
+    }
+    .order-details {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 15px;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      text-align: center;
+      border: none;
+      font-weight: bold;
+    }
+    .btn-ambil {
+      background-color: #007BFF;
+      color: #fff;
+    }
+    .btn-tolak {
+      background-color: #dc3545;
+      color: #fff;
     }
     .close-notification {
       position: absolute;
-      top: 5px;
+      top: 10px;
       right: 10px;
-      font-size: 20px;
+      background: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
       cursor: pointer;
-      color: #999;
+      z-index: 1001;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
   </style>
 </head>
@@ -117,9 +131,12 @@
   <div id="list"></div>
 </div>
 
-<div id="notification-card" class="notification-card" style="display: none;">
+<div id="notification-overlay" class="notification-overlay">
   <span class="close-notification" id="close-notification">&times;</span>
-  <div id="notification-content"></div>
+  <div class="map-container">
+    <iframe id="notification-map" class="map-iframe"></iframe>
+  </div>
+  <div class="order-details" id="order-details"></div>
 </div>
 
 <audio id="notifSound" src="https://085757081073.github.io/Order/arpeggio-467.mp3" preload="auto"></audio>
@@ -133,26 +150,24 @@ const bucket = urlParams.get("firebase_bucket");
 const driverID = urlParams.get("driver") || "";
 const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
 
-// Variabel untuk menyimpan posisi driver dan notifikasi
+// Variabel untuk state aplikasi
 let driverPosition = null;
 let currentNotification = null;
 let notificationTimeout = null;
 let soundInterval = null;
 
-// Fungsi untuk menghitung jarak antara dua koordinat (dalam km)
+// Fungsi utilitas
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radius bumi dalam km
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
 }
 
-// Fungsi untuk mendapatkan lokasi driver
 function getDriverLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.watchPosition(
@@ -165,89 +180,102 @@ function getDriverLocation() {
       (error) => {
         console.error("Error getting location:", error);
       },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      { enableHighAccuracy: true }
     );
-  } else {
-    alert("Geolocation tidak didukung di browser ini.");
   }
 }
 
-// Fungsi untuk menampilkan notifikasi
-function showNotification(order, distance) {
-  // Hentikan notifikasi sebelumnya jika ada
-  if (currentNotification) {
-    clearNotification();
+function showNotification(order) {
+  // Hentikan notifikasi sebelumnya
+  clearNotification();
+  
+  // Format waktu order yang benar
+  const orderTime = order.timestamp ? 
+    new Date(order.timestamp).toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }) : 'Waktu tidak tersedia';
+
+  // Hitung jarak jika ada lokasi driver
+  let distanceInfo = '';
+  if (driverPosition && order.from_lat && order.from_lng) {
+    const distance = calculateDistance(
+      driverPosition.lat,
+      driverPosition.lng,
+      parseFloat(order.from_lat),
+      parseFloat(order.from_lng)
+    );
+    distanceInfo = ` (${distance.toFixed(1)} km dari Anda)`;
   }
-  
-  // Format waktu order
-  const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleString() : "-";
-  
-  // URL untuk peta
+
+  // Set peta
   const mapUrl = order.from_lat && order.from_lng && order.to_lat && order.to_lng 
     ? `https://map.rasitech.org/?direction=%7B%22origin%22:%22${order.from_lat},${order.from_lng}%22,%22destination%22:%22${order.to_lat},${order.to_lng}%22%7D`
-    : "#";
-  
-  // Update konten notifikasi
-  document.getElementById("notification-content").innerHTML = `
-    <div class="address"><strong>Pesanan Dekat (${distance.toFixed(1)} km):</strong></div>
+    : '';
+  document.getElementById("notification-map").src = mapUrl;
+
+  // Set detail order
+  document.getElementById("order-details").innerHTML = `
+    <div class="address"><strong>Detail Pesanan${distanceInfo}:</strong></div>
     <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
     <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
     <div class="details">
-      <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
       <span><strong>Waktu Order:</strong> ${orderTime}</span>
+      <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
     </div>
     <div class="price-distance">
-      <span>Rp${order.harga ? order.harga.toLocaleString() : "-"}</span>
-      <span>${order.jarak || "-"}</span>
+      <span><strong>Harga:</strong> Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
+      <span><strong>Jarak:</strong> ${order.jarak || "-"}</span>
     </div>
-    <iframe class="map-iframe" src="${mapUrl}" allowfullscreen></iframe>
     <div class="action-buttons">
-      <button class="btn btn-ambil" id="accept-order">Ambil Order</button>
       <button class="btn btn-tolak" id="reject-order">Tolak</button>
+      <button class="btn btn-ambil" id="accept-order">Ambil Order</button>
     </div>
   `;
-  
-  // Tampilkan notifikasi
-  document.getElementById("notification-card").style.display = "block";
+
+  // Tampilkan overlay
+  document.getElementById("notification-overlay").style.display = "block";
   currentNotification = order;
-  
-  // Mulai putar suara notifikasi berulang
-  const loopSound = document.getElementById("loopSound");
-  loopSound.play().catch(e => console.log("Sound play error:", e));
-  soundInterval = setInterval(() => {
-    loopSound.play().catch(e => console.log("Sound play error:", e));
-  }, 3000);
-  
-  // Set timeout 10 detik untuk notifikasi
+
+  // Mulai suara notifikasi
+  playNotificationSound();
+
+  // Timeout 10 detik
   notificationTimeout = setTimeout(() => {
     clearNotification();
   }, 10000);
-  
-  // Event listener untuk tombol
+
+  // Event listeners
   document.getElementById("accept-order").onclick = () => {
     acceptOrder(order);
     clearNotification();
   };
-  
-  document.getElementById("reject-order").onclick = () => {
-    clearNotification();
-  };
-  
-  document.getElementById("close-notification").onclick = () => {
-    clearNotification();
-  };
+
+  document.getElementById("reject-order").onclick = clearNotification;
+  document.getElementById("close-notification").onclick = clearNotification;
 }
 
-// Fungsi untuk membersihkan notifikasi
+function playNotificationSound() {
+  const loopSound = document.getElementById("loopSound");
+  loopSound.play().catch(e => console.log("Sound error:", e));
+  soundInterval = setInterval(() => {
+    loopSound.play().catch(e => console.log("Sound error:", e));
+  }, 3000);
+}
+
 function clearNotification() {
-  document.getElementById("notification-card").style.display = "none";
+  const overlay = document.getElementById("notification-overlay");
+  overlay.style.display = "none";
+  document.getElementById("notification-map").src = "";
   clearTimeout(notificationTimeout);
   clearInterval(soundInterval);
   document.getElementById("loopSound").pause();
   currentNotification = null;
 }
 
-// Fungsi untuk menerima order
 function acceptOrder(order) {
   const dataKirim = {
     status: "order_ambil_berhasil",
@@ -284,7 +312,7 @@ function acceptOrder(order) {
   }
 }
 
-// Panggil fungsi untuk mendapatkan lokasi driver
+// Inisialisasi
 getDriverLocation();
 
 const script = document.createElement("script");
@@ -308,6 +336,7 @@ script2.onload = () => {
   db.ref(bucket).on("value", snapshot => {
     const data = snapshot.val();
     const newSnapshot = JSON.stringify(data);
+    
     if (newSnapshot !== lastSnapshot) {
       lastSnapshot = newSnapshot;
       document.getElementById("notifSound").play().catch(() => {});
@@ -320,10 +349,10 @@ script2.onload = () => {
     for (let key in data) {
       const order = data[key];
       if (order.status === "menunggudriver") {
-        order.key = key; // Simpan key untuk update nanti
+        order.key = key;
         waitingOrders++;
         
-        // Cek jarak jika driverPosition tersedia
+        // Cek jarak untuk notifikasi otomatis
         if (driverPosition && order.from_lat && order.from_lng) {
           const distance = calculateDistance(
             driverPosition.lat,
@@ -333,32 +362,33 @@ script2.onload = () => {
           );
           
           if (distance < 2 && !currentNotification) {
-            showNotification(order, distance);
+            showNotification(order);
           }
         }
 
-        // Buat card untuk list biasa
-        const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleString() : "-";
+        // Buat card untuk list
+        const orderTime = order.timestamp ? 
+          new Date(order.timestamp).toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit'
+          }) : '-';
+        
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
           <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
           <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
           <div class="details">
-            <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
-            <span><strong>Waktu Order:</strong> ${orderTime}</span>
+            <span><strong>${orderTime}</strong></span>
+            <span>${order.durasi || "-"}</span>
           </div>
           <div class="price-distance">
-            <span>Rp${order.harga ? order.harga.toLocaleString() : "-"}</span>
+            <span>Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
             <span>${order.jarak || "-"}</span>
           </div>
-          <button class="btn btn-ambil">Ambil Order</button>
         `;
         
-        card.querySelector(".btn-ambil").onclick = () => {
-          acceptOrder(order);
-        };
-        
+        card.onclick = () => showNotification(order);
         listDiv.appendChild(card);
       }
     }
