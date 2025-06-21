@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daftar Pesanan - Driver</title>
+  <title>Daftar Pesanan Driver</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * {
@@ -33,21 +33,9 @@
       overflow: hidden;
     }
     
-    .header::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
-      background-size: cover;
-    }
-    
     .header h1 {
       font-size: 1.8rem;
       margin-bottom: 8px;
-      position: relative;
     }
     
     .driver-info {
@@ -57,7 +45,6 @@
       gap: 10px;
       margin-top: 10px;
       font-size: 1.1rem;
-      position: relative;
     }
     
     .driver-info i {
@@ -76,16 +63,10 @@
       padding: 18px;
       margin-bottom: 18px;
       box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
       cursor: pointer;
       position: relative;
       overflow: hidden;
       border: 1px solid #e0e6ed;
-    }
-    
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
     }
     
     .card::before {
@@ -161,7 +142,6 @@
       background: rgba(0, 0, 0, 0.85);
       z-index: 1000;
       display: none;
-      backdrop-filter: blur(5px);
     }
     
     .map-container {
@@ -207,7 +187,6 @@
       text-align: center;
       border: none;
       font-weight: bold;
-      transition: all 0.3s ease;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -217,23 +196,11 @@
     .btn-ambil {
       background: linear-gradient(to right, #2ecc71, #27ae60);
       color: white;
-      box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
-    }
-    
-    .btn-ambil:hover {
-      background: linear-gradient(to right, #27ae60, #219653);
-      transform: translateY(-2px);
     }
     
     .btn-tolak {
       background: linear-gradient(to right, #e74c3c, #c0392b);
       color: white;
-      box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
-    }
-    
-    .btn-tolak:hover {
-      background: linear-gradient(to right, #c0392b, #a93226);
-      transform: translateY(-2px);
     }
     
     .close-notification {
@@ -251,14 +218,8 @@
       cursor: pointer;
       z-index: 1001;
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s ease;
       font-size: 20px;
       color: #e74c3c;
-    }
-    
-    .close-notification:hover {
-      transform: rotate(90deg) scale(1.1);
-      background: #f8d7da;
     }
     
     .btn-ambil-order {
@@ -271,18 +232,11 @@
       border-radius: 10px;
       font-weight: bold;
       cursor: pointer;
-      transition: all 0.3s ease;
       margin-top: 15px;
-      box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-    }
-    
-    .btn-ambil-order:hover {
-      background: linear-gradient(to right, #2980b9, #2573a7);
-      transform: translateY(-2px);
     }
     
     .status-indicator {
@@ -295,13 +249,6 @@
       border-radius: 20px;
       font-size: 12px;
       font-weight: bold;
-      animation: pulse 1.5s infinite;
-    }
-    
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
     }
     
     .driver-location-info {
@@ -330,7 +277,6 @@
       text-align: center;
       padding: 15px;
       font-size: 14px;
-      z-index: 500;
     }
     
     .loading {
@@ -374,11 +320,11 @@
       <h1><i class="fas fa-list-ul"></i> Daftar Pesanan</h1>
       <div class="driver-info">
         <i class="fas fa-user-circle"></i>
-        <span id="driver-name">Driver: Budi Santoso</span>
+        <span id="driver-name">Memuat data driver...</span>
       </div>
       <div class="driver-info">
         <i class="fas fa-id-card"></i>
-        <span id="driver-id">ID: DRV-789012</span>
+        <span id="driver-id">ID: -</span>
       </div>
     </div>
     
@@ -408,21 +354,29 @@
   </audio>
   
   <div class="footer">
-    <p>&copy; 2023 Aplikasi Driver - Sistem Pesanan Online</p>
+    <p>&copy; 2023 Aplikasi Driver</p>
   </div>
 
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <script>
-    // Inisialisasi parameter
+    // Inisialisasi parameter dari URL
     const urlParams = new URLSearchParams(window.location.search);
-    const firebaseURL = urlParams.get("firebase_url") || "https://driverapp-12345-default-rtdb.asia-southeast1.firebasedatabase.app";
-    const firebaseKey = urlParams.get("firebase_key") || "AIzaSyABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
-    const bucket = urlParams.get("firebase_bucket") || "orders";
-    const driverID = urlParams.get("driver") || "DRV-789012";
-    const namaDriver = (urlParams.get("nama_driver") || "Budi Santoso").replace(/_/g, " ");
+    const firebaseURL = urlParams.get("firebase_url");
+    const firebaseKey = urlParams.get("firebase_key");
+    const bucket = urlParams.get("firebase_bucket");
+    const driverID = urlParams.get("driver");
+    const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
 
     // Tampilkan nama driver di header
-    document.getElementById("driver-name").textContent = `Driver: ${namaDriver}`;
-    document.getElementById("driver-id").textContent = `ID: ${driverID}`;
+    if (namaDriver) {
+      document.getElementById("driver-name").textContent = `Driver: ${namaDriver}`;
+    }
+    if (driverID) {
+      document.getElementById("driver-id").textContent = `ID: ${driverID}`;
+    }
 
     // Variabel untuk state aplikasi
     let driverPosition = null;
@@ -461,7 +415,7 @@
             console.error("Error getting location:", error);
             document.getElementById("order-count").innerHTML = 
               `<div style="color: #e74c3c; text-align: center; padding: 20px;">
-                 <i class="fas fa-exclamation-triangle"></i> Akses lokasi diperlukan untuk aplikasi ini. 
+                 <i class="fas fa-exclamation-triangle"></i> Akses lokasi diperlukan! 
                  Harap aktifkan akses lokasi di pengaturan browser Anda.
                </div>`;
           },
@@ -612,77 +566,106 @@
         lng_driver: driverPosition.lng   // Lokasi driver ditambahkan di sini
       };
 
-      // Simulasikan update Firebase
-      console.log("Mengupdate Firebase dengan data:", dataKirim);
-      
-      // Simulasikan pengiriman ke App Inventor/WebView
-      if (window.AppInventor || window.WebViewInterface) {
-        const webString = JSON.stringify(dataKirim);
-        console.log("Mengirim webstring:", webString);
+      // Update Firebase dengan status baru
+      if (firebase.apps.length > 0) {
+        firebase.database().ref(bucket + "/" + order.key).update({
+          status: "diambil",
+          driverID: driverID,
+          driverName: namaDriver,
+          lat_driver: driverPosition.lat,  // Simpan lokasi driver di Firebase
+          lng_driver: driverPosition.lng   // Simpan lokasi driver di Firebase
+        });
+      }
+
+      // Kirim data ke App Inventor/WebView
+      if (window.AppInventor) {
+        window.AppInventor.setWebViewString(JSON.stringify(dataKirim));
+      } else if (window.WebViewInterface) {
+        window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
       } else {
         console.log("Order diambil:", order);
-        alert(`Order dari ${order.alamat_a} berhasil diambil!`);
       }
     }
 
-    // Inisialisasi
+    // Inisialisasi Firebase
+    const firebaseConfig = {
+      apiKey: firebaseKey,
+      databaseURL: firebaseURL
+    };
+    
+    try {
+      firebase.initializeApp(firebaseConfig);
+    } catch (e) {
+      console.error("Firebase initialization error", e);
+      document.getElementById("order-count").innerHTML = 
+        `<div style="color: #e74c3c; text-align: center; padding: 20px;">
+           <i class="fas fa-exclamation-triangle"></i> Kesalahan inisialisasi Firebase
+         </div>`;
+    }
+
+    // Inisialisasi lokasi driver
     getDriverLocation();
 
-    // Fungsi untuk menampilkan pesanan demo
-    function loadDemoOrders() {
-      const orders = [
-        {
-          key: "order1",
-          status: "menunggudriver",
-          alamat_a: "Jl. Sudirman No. 123, Jakarta Pusat",
-          alamat_b: "Apartemen Taman Rasuna, Kuningan",
-          harga: 45000,
-          jarak: "5.2 km",
-          durasi: "15 menit",
-          from_lat: -6.2088,
-          from_lng: 106.8456,
-          to_lat: -6.2275,
-          to_lng: 106.8077,
-          timestamp: Date.now() - 1800000
-        },
-        {
-          key: "order2",
-          status: "menunggudriver",
-          alamat_a: "Grand Indonesia Mall, Jakarta Pusat",
-          alamat_b: "Plaza Senayan, Jakarta Selatan",
-          harga: 35000,
-          jarak: "3.8 km",
-          durasi: "12 menit",
-          from_lat: -6.1945,
-          from_lng: 106.8229,
-          to_lat: -6.2245,
-          to_lng: 106.8005,
-          timestamp: Date.now() - 900000
-        },
-        {
-          key: "order3",
-          status: "menunggudriver",
-          alamat_a: "Kebayoran Baru, Jakarta Selatan",
-          alamat_b: "Pasar Santa, Jakarta Selatan",
-          harga: 25000,
-          jarak: "2.5 km",
-          durasi: "8 menit",
-          from_lat: -6.2442,
-          from_lng: 106.7990,
-          to_lat: -6.2405,
-          to_lng: 106.7832,
-          timestamp: Date.now() - 300000
-        }
-      ];
+    // Inisialisasi database
+    const db = firebase.database();
+    let lastSnapshot = "";
+
+    db.ref(bucket).on("value", snapshot => {
+      const data = snapshot.val();
+      const newSnapshot = JSON.stringify(data);
       
+      if (newSnapshot !== lastSnapshot) {
+        lastSnapshot = newSnapshot;
+        document.getElementById("notifSound").play().catch(() => {});
+      }
+
       const listDiv = document.getElementById("list");
       listDiv.innerHTML = "";
       
       let waitingOrders = 0;
-      
-      orders.forEach(order => {
+      for (let key in data) {
+        const order = data[key];
         if (order.status === "menunggudriver") {
+          order.key = key;
           waitingOrders++;
           
           const orderTime = order.timestamp ? 
-            new Date(ord
+            new Date(order.timestamp).toLocaleTimeString('id-ID', { 
+              hour: '2-digit', 
+              minute: '2-digit'
+            }) : '-';
+          
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="status-indicator">BARU</div>
+            <div class="address"><strong><i class="fas fa-map-marker-alt"></i> Dari:</strong> ${order.alamat_a || "-"}</div>
+            <div class="address"><strong><i class="fas fa-flag-checkered"></i> Ke:</strong> ${order.alamat_b || "-"}</div>
+            <div class="details">
+              <span><i class="fas fa-clock"></i> ${orderTime}</span>
+              <span><i class="fas fa-hourglass-half"></i> ${order.durasi || "-"}</span>
+            </div>
+            <div class="price-distance">
+              <span class="price"><i class="fas fa-money-bill-wave"></i> Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
+              <span class="distance"><i class="fas fa-road"></i> ${order.jarak || "-"}</span>
+            </div>
+            ${driverPosition ? `
+              <div class="driver-location-info">
+                <i class="fas fa-map-marker-alt"></i> Lokasi Anda: ${driverPosition.lat.toFixed(6)}, ${driverPosition.lng.toFixed(6)}
+              </div>
+            ` : ''}
+            <button class="btn-ambil-order">
+              <i class="fas fa-check-circle"></i> AMBIL ORDER
+            </button>
+          `;
+          
+          card.querySelector('.btn-ambil-order').addEventListener('click', (e) => {
+            e.stopPropagation();
+            acceptOrder(order);
+          });
+          
+          card.addEventListener('click', () => {
+            showNotification(order);
+          });
+          
+          listDiv.appendChild(card);
