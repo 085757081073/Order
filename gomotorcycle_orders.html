@@ -1,149 +1,73 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
   <meta charset="UTF-8">
+  <title>Daftar Pesanan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daftar Pesanan Driver</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    * {
+    body {
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
+      background: #f5f5f5;
     }
-    
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
-      color: #333;
-      line-height: 1.6;
-      min-height: 100vh;
-      padding: 15px;
-    }
-    
-    .header {
-      text-align: center;
-      margin-bottom: 20px;
-      padding: 15px;
-      background: linear-gradient(90deg, #3498db, #1a5276);
-      color: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .header h1 {
-      font-size: 1.8rem;
-      margin-bottom: 8px;
-    }
-    
-    .driver-info {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-      font-size: 1.1rem;
-    }
-    
-    .driver-info i {
-      color: #f1c40f;
-    }
-    
     .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding-bottom: 80px;
+      padding: 15px;
+      margin-bottom: 70px;
     }
-    
     .card {
-      background: white;
-      border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 18px;
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      border: 1px solid #e0e6ed;
-    }
-    
-    .card::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 6px;
-      height: 100%;
-      background: linear-gradient(to bottom, #3498db, #2c3e50);
-      border-radius: 12px 0 0 12px;
-    }
-    
-    .address {
-      margin: 8px 0;
-      padding: 12px;
-      background: #f8fafc;
+      background: #fff;
       border-radius: 8px;
-      border-left: 3px solid #3498db;
+      padding: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-size: 14px;
+      line-height: 1.4;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    
-    .address:nth-child(3) {
-      border-left-color: #e74c3c;
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    
+    .address {
+      margin: 5px 0;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 5px;
+    }
     .details {
       display: flex;
       justify-content: space-between;
-      margin-top: 15px;
-      font-size: 14px;
-      color: #555;
-      background: #f1f8ff;
-      padding: 10px;
-      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #666;
     }
-    
     .price-distance {
       display: flex;
       justify-content: space-between;
-      margin-top: 15px;
+      margin-top: 8px;
       font-weight: bold;
-      background: linear-gradient(to right, #f8f9fa, #e9ecef);
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 16px;
     }
-    
-    .price {
-      color: #27ae60;
-    }
-    
-    .distance {
-      color: #e67e22;
-    }
-    
     .order-count {
       text-align: center;
-      margin-bottom: 20px;
-      font-size: 18px;
-      color: #2c3e50;
-      padding: 12px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #666;
+      padding: 10px;
+      background: #e9f7fe;
+      border-radius: 8px;
     }
-    
     .notification-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0,0,0,0.85);
       z-index: 1000;
       display: none;
     }
-    
     .map-container {
       position: absolute;
       top: 0;
@@ -151,65 +75,60 @@
       right: 0;
       height: 50vh;
     }
-    
     .map-iframe {
       width: 100%;
       height: 100%;
       border: none;
     }
-    
     .order-details {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
       background: white;
-      padding: 20px;
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-      max-height: 45vh;
+      padding: 15px;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+      max-height: 40vh;
       overflow-y: auto;
-      box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.15);
     }
-    
     .action-buttons {
       display: flex;
-      gap: 15px;
-      margin-top: 20px;
+      gap: 10px;
+      margin-top: 15px;
     }
-    
     .btn {
       flex: 1;
-      padding: 16px;
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 17px;
+      font-size: 16px;
       text-align: center;
       border: none;
       font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      transition: all 0.3s;
     }
-    
     .btn-ambil {
-      background: linear-gradient(to right, #2ecc71, #27ae60);
-      color: white;
+      background-color: #007BFF;
+      color: #fff;
     }
-    
+    .btn-ambil:hover {
+      background-color: #0069d9;
+    }
     .btn-tolak {
-      background: linear-gradient(to right, #e74c3c, #c0392b);
-      color: white;
+      background-color: #dc3545;
+      color: #fff;
     }
-    
+    .btn-tolak:hover {
+      background-color: #c82333;
+    }
     .close-notification {
       position: absolute;
-      top: 15px;
-      right: 15px;
+      top: 10px;
+      right: 10px;
       background: white;
-      width: 40px;
-      height: 40px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -217,455 +136,356 @@
       font-weight: bold;
       cursor: pointer;
       z-index: 1001;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-      font-size: 20px;
-      color: #e74c3c;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    
-    .btn-ambil-order {
-      width: 100%;
-      padding: 16px 0;
-      font-size: 17px;
-      background: linear-gradient(to right, #3498db, #2980b9);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    
-    .status-indicator {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: #e74c3c;
-      color: white;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-    
-    .driver-location-info {
-      background: #e3f2fd;
+    .driver-info {
+      background: #e8f4ff;
       padding: 10px;
       border-radius: 8px;
-      margin-top: 10px;
+      margin-bottom: 15px;
       font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .driver-location-info i {
-      color: #3498db;
-      font-size: 18px;
-    }
-    
-    .footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(to right, #2c3e50, #1a252f);
-      color: white;
       text-align: center;
-      padding: 15px;
-      font-size: 14px;
     }
-    
-    .loading {
-      text-align: center;
-      padding: 30px;
-      color: #7f8c8d;
-      font-size: 18px;
+    .driver-info strong {
+      color: #007bff;
     }
-    
-    .loading i {
-      font-size: 24px;
-      margin-bottom: 10px;
-      display: block;
-      color: #3498db;
-    }
-    
-    @media (max-width: 600px) {
-      .header h1 {
-        font-size: 1.5rem;
-      }
-      
-      .driver-info {
-        font-size: 1rem;
-      }
-      
-      .price-distance {
-        flex-direction: column;
-        gap: 8px;
-      }
-      
-      .action-buttons {
-        flex-direction: column;
-        gap: 10px;
-      }
+    .location-tag {
+      background: #d4edda;
+      color: #155724;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-top: 5px;
+      display: inline-block;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1><i class="fas fa-list-ul"></i> Daftar Pesanan</h1>
-      <div class="driver-info">
-        <i class="fas fa-user-circle"></i>
-        <span id="driver-name">Memuat data driver...</span>
-      </div>
-      <div class="driver-info">
-        <i class="fas fa-id-card"></i>
-        <span id="driver-id">ID: -</span>
-      </div>
-    </div>
-    
-    <div id="order-count" class="order-count">
-      <i class="fas fa-spinner fa-spin"></i> Memuat daftar pesanan...
-    </div>
-    
-    <div id="list">
-      <!-- Pesanan akan dimuat di sini -->
-    </div>
+<div class="container">
+  <div class="driver-info">
+    Driver: <strong id="driver-name-display">-</strong> | 
+    ID: <strong id="driver-id-display">-</strong>
+    <div id="location-status" class="location-tag">Memuat lokasi...</div>
   </div>
-
-  <div id="notification-overlay" class="notification-overlay">
-    <span class="close-notification" id="close-notification">&times;</span>
-    <div class="map-container">
-      <iframe id="notification-map" class="map-iframe"></iframe>
-    </div>
-    <div class="order-details" id="order-details"></div>
-  </div>
-
-  <audio id="notifSound" preload="auto">
-    <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
-  </audio>
   
-  <audio id="loopSound" preload="auto" loop>
-    <source src="https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3" type="audio/mpeg">
-  </audio>
-  
-  <div class="footer">
-    <p>&copy; 2023 Aplikasi Driver</p>
+  <div id="order-count" class="order-count">Memuat daftar pesanan...</div>
+  <div id="list"></div>
+</div>
+
+<div id="notification-overlay" class="notification-overlay">
+  <span class="close-notification" id="close-notification">&times;</span>
+  <div class="map-container">
+    <iframe id="notification-map" class="map-iframe"></iframe>
   </div>
+  <div class="order-details" id="order-details"></div>
+</div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<audio id="notifSound" src="https://085757081073.github.io/Order/arpeggio-467.mp3" preload="auto"></audio>
+<audio id="loopSound" src="https://085757081073.github.io/Order/arpeggio-467.mp3" preload="auto" loop></audio>
 
-  <script>
-    // Inisialisasi parameter dari URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const firebaseURL = urlParams.get("firebase_url");
-    const firebaseKey = urlParams.get("firebase_key");
-    const bucket = urlParams.get("firebase_bucket");
-    const driverID = urlParams.get("driver");
-    const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const firebaseURL = urlParams.get("firebase_url");
+const firebaseKey = urlParams.get("firebase_key");
+const bucket = urlParams.get("firebase_bucket");
+const driverID = urlParams.get("driver") || "";
+const namaDriver = (urlParams.get("nama_driver") || "").replace(/_/g, " ");
 
-    // Tampilkan nama driver di header
-    if (namaDriver) {
-      document.getElementById("driver-name").textContent = `Driver: ${namaDriver}`;
-    }
-    if (driverID) {
-      document.getElementById("driver-id").textContent = `ID: ${driverID}`;
-    }
+// Tampilkan info driver
+document.getElementById("driver-name-display").textContent = namaDriver || "-";
+document.getElementById("driver-id-display").textContent = driverID || "-";
 
-    // Variabel untuk state aplikasi
-    let driverPosition = null;
-    let currentNotification = null;
-    let notificationTimeout = null;
-    let soundInterval = null;
+// Variabel untuk state aplikasi
+let driverPosition = null;
+let currentNotification = null;
+let notificationTimeout = null;
+let soundInterval = null;
 
-    // Fungsi utilitas
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
+// Fungsi utilitas
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 
-    function getDriverLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(
-          (position) => {
-            driverPosition = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            
-            // Perbarui indikator lokasi
-            const locationElements = document.querySelectorAll('.driver-location-info');
-            locationElements.forEach(el => {
-              el.innerHTML = `<i class="fas fa-map-marker-alt"></i> Lokasi Anda: ${driverPosition.lat.toFixed(6)}, ${driverPosition.lng.toFixed(6)}`;
-            });
-          },
-          (error) => {
-            console.error("Error getting location:", error);
-            document.getElementById("order-count").innerHTML = 
-              `<div style="color: #e74c3c; text-align: center; padding: 20px;">
-                 <i class="fas fa-exclamation-triangle"></i> Akses lokasi diperlukan! 
-                 Harap aktifkan akses lokasi di pengaturan browser Anda.
-               </div>`;
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-      } else {
-        document.getElementById("order-count").innerHTML = 
-          `<div style="color: #e74c3c; text-align: center; padding: 20px;">
-             <i class="fas fa-exclamation-triangle"></i> Browser tidak mendukung geolokasi
-           </div>`;
-      }
-    }
+function getDriverLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(
+      (position) => {
+        driverPosition = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        document.getElementById("location-status").textContent = 
+          `Lokasi aktif: ${driverPosition.lat.toFixed(6)}, ${driverPosition.lng.toFixed(6)}`;
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        document.getElementById("location-status").textContent = 
+          "Lokasi tidak tersedia. Izinkan akses lokasi untuk fitur lengkap";
+      },
+      { enableHighAccuracy: true }
+    );
+  } else {
+    document.getElementById("location-status").textContent = 
+      "Browser tidak mendukung geolokasi";
+  }
+}
 
-    function showNotification(order) {
-      // Hentikan notifikasi sebelumnya
-      clearNotification();
-      
-      // Format waktu order
-      const orderTime = order.timestamp ? 
-        new Date(order.timestamp).toLocaleTimeString('id-ID', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }) : 'Waktu tidak tersedia';
+function showNotification(order) {
+  // Hentikan notifikasi sebelumnya
+  clearNotification();
+  
+  // Format waktu order yang benar
+  const orderTime = order.timestamp ? 
+    new Date(order.timestamp).toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }) : 'Waktu tidak tersedia';
 
-      // Hitung jarak jika ada lokasi driver
-      let distanceInfo = '';
-      if (driverPosition && order.from_lat && order.from_lng) {
-        const distance = calculateDistance(
-          driverPosition.lat,
-          driverPosition.lng,
-          parseFloat(order.from_lat),
-          parseFloat(order.from_lng)
-        );
-        distanceInfo = ` (${distance.toFixed(1)} km dari Anda)`;
-      }
+  // Hitung jarak jika ada lokasi driver
+  let distanceInfo = '';
+  if (driverPosition && order.from_lat && order.from_lng) {
+    const distance = calculateDistance(
+      driverPosition.lat,
+      driverPosition.lng,
+      parseFloat(order.from_lat),
+      parseFloat(order.from_lng)
+    );
+    distanceInfo = ` (${distance.toFixed(1)} km dari Anda)`;
+  }
 
-      // Set peta
-      const mapUrl = order.from_lat && order.from_lng && order.to_lat && order.to_lng 
-        ? `https://www.openstreetmap.org/export/embed.html?bbox=${order.from_lng}%2C${order.from_lat}%2C${order.to_lng}%2C${order.to_lat}&amp;layer=mapnik&marker=${order.from_lat},${order.from_lng}&marker=${order.to_lat},${order.to_lng}`
-        : '';
-      document.getElementById("notification-map").src = mapUrl;
+  // Set peta
+  const mapUrl = order.from_lat && order.from_lng && order.to_lat && order.to_lng 
+    ? `https://map.rasitech.org/?direction=%7B%22origin%22:%22${order.from_lat},${order.from_lng}%22,%22destination%22:%22${order.to_lat},${order.to_lng}%22%7D`
+    : '';
+  document.getElementById("notification-map").src = mapUrl;
 
-      // Set detail order
-      document.getElementById("order-details").innerHTML = `
-        <h3 style="margin-bottom: 15px; color: #2c3e50; display: flex; align-items: center; gap: 10px;">
-          <i class="fas fa-info-circle"></i> Detail Pesanan${distanceInfo}
-        </h3>
-        
-        <div class="address"><strong><i class="fas fa-map-marker-alt"></i> Dari:</strong> ${order.alamat_a || "-"}</div>
-        <div class="address"><strong><i class="fas fa-flag-checkered"></i> Ke:</strong> ${order.alamat_b || "-"}</div>
-        
-        <div class="details">
-          <span><strong><i class="fas fa-clock"></i> Waktu:</strong> ${orderTime}</span>
-          <span><strong><i class="fas fa-hourglass-half"></i> Durasi:</strong> ${order.durasi || "-"}</span>
-        </div>
-        
-        <div class="price-distance">
-          <span class="price"><i class="fas fa-money-bill-wave"></i> Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
-          <span class="distance"><i class="fas fa-road"></i> ${order.jarak || "-"}</span>
-        </div>
-        
-        ${driverPosition ? `
-          <div class="driver-location-info">
-            <i class="fas fa-map-marker-alt"></i> Lokasi Anda: ${driverPosition.lat.toFixed(6)}, ${driverPosition.lng.toFixed(6)}
-          </div>
-        ` : ''}
-        
-        <div class="action-buttons">
-          <button class="btn btn-tolak" id="reject-order">
-            <i class="fas fa-times"></i> Tolak
-          </button>
-          <button class="btn btn-ambil" id="accept-order">
-            <i class="fas fa-check"></i> Ambil Order
-          </button>
-        </div>
-      `;
+  // Set detail order
+  document.getElementById("order-details").innerHTML = `
+    <div class="address"><strong>Detail Pesanan${distanceInfo}:</strong></div>
+    <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
+    <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
+    <div class="details">
+      <span><strong>Waktu Order:</strong> ${orderTime}</span>
+      <span><strong>Durasi:</strong> ${order.durasi || "-"}</span>
+    </div>
+    <div class="price-distance">
+      <span><strong>Harga:</strong> Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
+      <span><strong>Jarak:</strong> ${order.jarak || "-"}</span>
+    </div>
+    <div class="action-buttons">
+      <button class="btn btn-tolak" id="reject-order">Tolak</button>
+      <button class="btn btn-ambil" id="accept-order">Ambil Order</button>
+    </div>
+    ${driverPosition ? 
+      `<div class="location-tag">Lokasi driver akan dikirim: ${driverPosition.lat.toFixed(6)}, ${driverPosition.lng.toFixed(6)}</div>` : 
+      `<div class="location-tag" style="background:#f8d7da;color:#721c24;">Lokasi tidak tersedia! Aktifkan GPS</div>`}
+  `;
 
-      // Tampilkan overlay
-      document.getElementById("notification-overlay").style.display = "block";
-      currentNotification = order;
+  // Tampilkan overlay
+  document.getElementById("notification-overlay").style.display = "block";
+  currentNotification = order;
 
-      // Mulai suara notifikasi
-      playNotificationSound();
+  // Mulai suara notifikasi
+  playNotificationSound();
 
-      // Timeout 15 detik
-      notificationTimeout = setTimeout(() => {
-        clearNotification();
-      }, 15000);
+  // Timeout 10 detik
+  notificationTimeout = setTimeout(() => {
+    clearNotification();
+  }, 10000);
 
-      // Event listeners
-      document.getElementById("accept-order").onclick = () => {
-        acceptOrder(order);
-        clearNotification();
-      };
+  // Event listeners
+  document.getElementById("accept-order").onclick = () => {
+    acceptOrder(order);
+    clearNotification();
+  };
 
-      document.getElementById("reject-order").onclick = clearNotification;
-      document.getElementById("close-notification").onclick = clearNotification;
-    }
+  document.getElementById("reject-order").onclick = clearNotification;
+  document.getElementById("close-notification").onclick = clearNotification;
+}
 
-    function playNotificationSound() {
-      const loopSound = document.getElementById("loopSound");
-      loopSound.play().catch(e => console.log("Sound error:", e));
-      soundInterval = setInterval(() => {
-        loopSound.play().catch(e => console.log("Sound error:", e));
-      }, 3000);
-    }
+function playNotificationSound() {
+  const loopSound = document.getElementById("loopSound");
+  loopSound.play().catch(e => console.log("Sound error:", e));
+  soundInterval = setInterval(() => {
+    loopSound.play().catch(e => console.log("Sound error:", e));
+  }, 3000);
+}
 
-    function clearNotification() {
-      const overlay = document.getElementById("notification-overlay");
-      overlay.style.display = "none";
-      document.getElementById("notification-map").src = "";
-      clearTimeout(notificationTimeout);
-      clearInterval(soundInterval);
-      document.getElementById("loopSound").pause();
-      currentNotification = null;
-    }
+function clearNotification() {
+  const overlay = document.getElementById("notification-overlay");
+  overlay.style.display = "none";
+  document.getElementById("notification-map").src = "";
+  clearTimeout(notificationTimeout);
+  clearInterval(soundInterval);
+  document.getElementById("loopSound").pause();
+  currentNotification = null;
+}
 
-    function acceptOrder(order) {
-      // Pastikan kita memiliki lokasi driver
-      if (!driverPosition) {
-        alert("Lokasi driver tidak tersedia. Harap aktifkan akses lokasi.");
-        return;
-      }
+function acceptOrder(order) {
+  // PERUBAHAN UTAMA: Tambahkan lokasi driver ke Firebase dan data yang dikirim
+  const dataKirim = {
+    status: "order_ambil_berhasil",
+    userID: order.userID || "",
+    name: order.name || "",
+    alamat_a: order.alamat_a || "",
+    alamat_b: order.alamat_b || "",
+    harga_total: order.harga_total || "",
+    jarak: order.jarak || "",
+    durasi: order.durasi || "",
+    vehicle: order.vehicle || "",
+    from_lat: order.from_lat || "",
+    from_lng: order.from_lng || "",
+    to_lat: order.to_lat || "",
+    to_lng: order.to_lng || "",
+    harga: order.harga || "",
+    latlong_pengorder: order.latlong_pengorder || "",
+    driver_id: driverID,
+    driver_name: namaDriver,
+    // TAMBAHAN: Lokasi driver saat mengambil order
+    lat_driver: driverPosition ? driverPosition.lat : null,
+    lng_driver: driverPosition ? driverPosition.lng : null
+  };
 
-      // Data yang akan dikirim termasuk lokasi driver
-      const dataKirim = {
-        status: "order_ambil_berhasil",
-        userID: order.userID || "",
-        name: order.name || "",
-        alamat_a: order.alamat_a || "",
-        alamat_b: order.alamat_b || "",
-        harga_total: order.harga_total || "",
-        jarak: order.jarak || "",
-        durasi: order.durasi || "",
-        vehicle: order.vehicle || "",
-        from_lat: order.from_lat || "",
-        from_lng: order.from_lng || "",
-        to_lat: order.to_lat || "",
-        to_lng: order.to_lng || "",
-        harga: order.harga || "",
-        latlong_pengorder: order.latlong_pengorder || "",
-        driver_id: driverID,
-        driver_name: namaDriver,
-        lat_driver: driverPosition.lat,  // Lokasi driver ditambahkan di sini
-        lng_driver: driverPosition.lng   // Lokasi driver ditambahkan di sini
-      };
+  if (firebase.apps.length > 0) {
+    firebase.database().ref(bucket + "/" + order.key).update({
+      status: "diambil",
+      driverID: driverID,
+      driverName: namaDriver,
+      // TAMBAHAN: Lokasi driver disimpan di Firebase
+      lat_driver: driverPosition ? driverPosition.lat : null,
+      lng_driver: driverPosition ? driverPosition.lng : null
+    });
+  }
 
-      // Update Firebase dengan status baru
-      if (firebase.apps.length > 0) {
-        firebase.database().ref(bucket + "/" + order.key).update({
-          status: "diambil",
-          driverID: driverID,
-          driverName: namaDriver,
-          lat_driver: driverPosition.lat,  // Simpan lokasi driver di Firebase
-          lng_driver: driverPosition.lng   // Simpan lokasi driver di Firebase
-        });
-      }
+  if (window.AppInventor) {
+    window.AppInventor.setWebViewString(JSON.stringify(dataKirim));
+  } else if (window.WebViewInterface) {
+    window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
+  } else {
+    // Simulasi untuk pengembangan
+    console.log("Order diambil:", dataKirim);
+    alert(`Order berhasil diambil!\nLokasi driver: ${driverPosition ? driverPosition.lat + ', ' + driverPosition.lng : 'Tidak tersedia'}`);
+  }
+}
 
-      // Kirim data ke App Inventor/WebView
-      if (window.AppInventor) {
-        window.AppInventor.setWebViewString(JSON.stringify(dataKirim));
-      } else if (window.WebViewInterface) {
-        window.WebViewInterface.setWebViewString(JSON.stringify(dataKirim));
-      } else {
-        console.log("Order diambil:", order);
-      }
-    }
+// Inisialisasi
+getDriverLocation();
 
-    // Inisialisasi Firebase
-    const firebaseConfig = {
-      apiKey: firebaseKey,
-      databaseURL: firebaseURL
-    };
+const script = document.createElement("script");
+script.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js";
+document.head.appendChild(script);
+
+const script2 = document.createElement("script");
+script2.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js";
+document.head.appendChild(script2);
+
+script2.onload = () => {
+  const firebaseConfig = {
+    apiKey: firebaseKey,
+    databaseURL: firebaseURL
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let lastSnapshot = "";
+
+  db.ref(bucket).on("value", snapshot => {
+    const data = snapshot.val();
+    const newSnapshot = JSON.stringify(data);
     
-    try {
-      firebase.initializeApp(firebaseConfig);
-    } catch (e) {
-      console.error("Firebase initialization error", e);
-      document.getElementById("order-count").innerHTML = 
-        `<div style="color: #e74c3c; text-align: center; padding: 20px;">
-           <i class="fas fa-exclamation-triangle"></i> Kesalahan inisialisasi Firebase
-         </div>`;
+    if (newSnapshot !== lastSnapshot) {
+      lastSnapshot = newSnapshot;
+      document.getElementById("notifSound").play().catch(() => {});
     }
 
-    // Inisialisasi lokasi driver
-    getDriverLocation();
-
-    // Inisialisasi database
-    const db = firebase.database();
-    let lastSnapshot = "";
-
-    db.ref(bucket).on("value", snapshot => {
-      const data = snapshot.val();
-      const newSnapshot = JSON.stringify(data);
-      
-      if (newSnapshot !== lastSnapshot) {
-        lastSnapshot = newSnapshot;
-        document.getElementById("notifSound").play().catch(() => {});
-      }
-
-      const listDiv = document.getElementById("list");
-      listDiv.innerHTML = "";
-      
-      let waitingOrders = 0;
-      for (let key in data) {
-        const order = data[key];
-        if (order.status === "menunggudriver") {
-          order.key = key;
-          waitingOrders++;
+    const listDiv = document.getElementById("list");
+    listDiv.innerHTML = "";
+    
+    let waitingOrders = 0;
+    for (let key in data) {
+      const order = data[key];
+      if (order.status === "menunggudriver" || order.status === "menungaudriver") {
+        order.key = key;
+        waitingOrders++;
+        
+        // Cek jarak untuk notifikasi otomatis
+        if (driverPosition && order.from_lat && order.from_lng) {
+          const distance = calculateDistance(
+            driverPosition.lat,
+            driverPosition.lng,
+            parseFloat(order.from_lat),
+            parseFloat(order.from_lng)
+          );
           
-          const orderTime = order.timestamp ? 
-            new Date(order.timestamp).toLocaleTimeString('id-ID', { 
-              hour: '2-digit', 
-              minute: '2-digit'
-            }) : '-';
-          
-          const card = document.createElement("div");
-          card.className = "card";
-          card.innerHTML = `
-            <div class="status-indicator">BARU</div>
-            <div class="address"><strong><i class="fas fa-map-marker-alt"></i> Dari:</strong> ${order.alamat_a || "-"}</div>
-            <div class="address"><strong><i class="fas fa-flag-checkered"></i> Ke:</strong> ${order.alamat_b || "-"}</div>
-            <div class="details">
-              <span><i class="fas fa-clock"></i> ${orderTime}</span>
-              <span><i class="fas fa-hourglass-half"></i> ${order.durasi || "-"}</span>
-            </div>
-            <div class="price-distance">
-              <span class="price"><i class="fas fa-money-bill-wave"></i> Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
-              <span class="distance"><i class="fas fa-road"></i> ${order.jarak || "-"}</span>
-            </div>
-            ${driverPosition ? `
-              <div class="driver-location-info">
-                <i class="fas fa-map-marker-alt"></i> Lokasi Anda: ${driverPosition.lat.toFixed(6)}, ${driverPosition.lng.toFixed(6)}
-              </div>
-            ` : ''}
-            <button class="btn-ambil-order">
-              <i class="fas fa-check-circle"></i> AMBIL ORDER
-            </button>
-          `;
-          
-          card.querySelector('.btn-ambil-order').addEventListener('click', (e) => {
-            e.stopPropagation();
-            acceptOrder(order);
-          });
-          
-          card.addEventListener('click', () => {
+          if (distance < 2 && !currentNotification) {
             showNotification(order);
-          });
-          
-          listDiv.appendChild(card);
+          }
+        }
+
+        // Buat card untuk list
+        const orderTime = order.timestamp ? 
+          new Date(order.timestamp).toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit'
+          }) : '-';
+        
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="address"><strong>Dari:</strong> ${order.alamat_a || "-"}</div>
+          <div class="address"><strong>Ke:</strong> ${order.alamat_b || "-"}</div>
+          <div class="details">
+            <span><strong>${orderTime}</strong></span>
+            <span>${order.durasi || "-"}</span>
+          </div>
+          <div class="price-distance">
+            <span>Rp${order.harga ? order.harga.toLocaleString('id-ID') : "-"}</span>
+            <span>${order.jarak || "-"}</span>
+          </div>
+          <button class="btn-ambil" style="
+            width: 100%;
+            margin-top: 12px;
+            padding: 14px 0;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+          ">AMBIL ORDER</button>
+        `;
+
+        // Event untuk tombol
+        card.querySelector('.btn-ambil').addEventListener('click', (e) => {
+          e.stopPropagation();
+          acceptOrder(order);
+        });
+
+        // Event untuk card
+        card.addEventListener('click', () => {
+          showNotification(order);
+        });
+
+        listDiv.appendChild(card);
+      }
+    }
+    
+    document.getElementById("order-count").textContent = 
+      waitingOrders === 0 ? "Tidak ada pesanan menunggu" : 
+      `${waitingOrders} pesanan menunggu`;
+  });
+};
+</script>
+</body>
+</html>
